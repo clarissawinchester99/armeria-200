@@ -7,21 +7,37 @@ const supabaseUrl =
 const supabasePublishableKey =
   "sb_publishable_w5DUekCafl_4HREnPDRAhQ_nzI2-Bq8";
 
+const GRADI = {
+  Dipendente: 20,
+  Armaiolo: 25,
+  "Vice-Direttore": 30,
+  Direttore: 40,
+  Proprietario: 45,
+};
+
 export async function POST(request) {
   try {
-    // Legge il token dell'utente che sta facendo la richiesta
-    const authHeader = request.headers.get("authorization");
+    // ============================================
+    // CONTROLLO SESSIONE
+    // ============================================
+
+    const authHeader =
+      request.headers.get("authorization");
 
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json(
-        { error: "Non autorizzato." },
-        { status: 401 }
+        {
+          error: "Non autorizzato.",
+        },
+        {
+          status: 401,
+        }
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
+    const token =
+      authHeader.replace("Bearer ", "");
 
-    // Client normale: serve per verificare chi sta facendo la richiesta
     const userClient = createClient(
       supabaseUrl,
       supabasePublishableKey,
@@ -41,18 +57,27 @@ export async function POST(request) {
 
     if (userError || !user) {
       return NextResponse.json(
-        { error: "Sessione non valida." },
-        { status: 401 }
+        {
+          error: "Sessione non valida.",
+        },
+        {
+          status: 401,
+        }
       );
     }
 
-    // Controlla che chi sta facendo la richiesta sia davvero admin
-    const { data: profiloAdmin, error: adminError } =
-      await userClient
-        .from("profiles")
-        .select("ruolo, attivo")
-        .eq("id", user.id)
-        .single();
+    // ============================================
+    // CONTROLLO ADMIN
+    // ============================================
+
+    const {
+      data: profiloAdmin,
+      error: adminError,
+    } = await userClient
+      .from("profiles")
+      .select("ruolo, attivo")
+      .eq("id", user.id)
+      .single();
 
     if (
       adminError ||
@@ -61,44 +86,71 @@ export async function POST(request) {
       !profiloAdmin.attivo
     ) {
       return NextResponse.json(
-        { error: "Accesso riservato agli amministratori." },
-        { status: 403 }
+        {
+          error:
+            "Accesso riservato agli amministratori.",
+        },
+        {
+          status: 403,
+        }
       );
     }
 
-    // Legge i dati del nuovo dipendente
+    // ============================================
+    // DATI NUOVO DIPENDENTE
+    // ============================================
+
     const body = await request.json();
 
-    const nome = String(body.nome || "").trim();
-    const cognome = String(body.cognome || "").trim();
-    const username = String(body.username || "")
-      .trim()
-      .toLowerCase();
+    const nome =
+      String(body.nome || "").trim();
 
-    const password = String(body.password || "");
+    const cognome =
+      String(body.cognome || "").trim();
 
-    const percentuale = Number(
-      body.percentuale_stipendio || 0
-    );
+    const username =
+      String(body.username || "")
+        .trim()
+        .toLowerCase();
 
-    // Controlli
-    if (!nome || !cognome || !username || !password) {
+    const password =
+      String(body.password || "");
+
+    const grado =
+      String(body.grado || "Dipendente").trim();
+
+    // ============================================
+    // CONTROLLI
+    // ============================================
+
+    if (
+      !nome ||
+      !cognome ||
+      !username ||
+      !password
+    ) {
       return NextResponse.json(
         {
           error:
             "Nome, cognome, username e password sono obbligatori.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    if (!/^[a-z0-9._-]+$/.test(username)) {
+    if (
+      !/^[a-z0-9._-]+$/.test(username)
+    ) {
       return NextResponse.json(
         {
           error:
             "Lo username può contenere solo lettere, numeri, punto, trattino e underscore.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
@@ -108,23 +160,32 @@ export async function POST(request) {
           error:
             "La password deve contenere almeno 6 caratteri.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
     if (
-      Number.isNaN(percentuale) ||
-      percentuale < 0 ||
-      percentuale > 100
+      !Object.prototype.hasOwnProperty.call(
+        GRADI,
+        grado
+      )
     ) {
       return NextResponse.json(
         {
           error:
-            "La percentuale stipendio deve essere compresa tra 0 e 100.",
+            "Ruolo lavorativo non valido.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
+
+    // ============================================
+    // CLIENT AMMINISTRATIVO
+    // ============================================
 
     const serviceRoleKey =
       process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -135,11 +196,12 @@ export async function POST(request) {
           error:
             "Configurazione server mancante.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
-    // Client amministrativo SOLO lato server
     const adminClient = createClient(
       supabaseUrl,
       serviceRoleKey,
@@ -151,46 +213,55 @@ export async function POST(request) {
       }
     );
 
-    // Controlla username già esistente
-    const { data: usernameEsistente } =
-      await adminClient
-        .from("profiles")
-        .select("id")
-        .ilike("username", username)
-        .maybeSingle();
+    // ============================================
+    // CONTROLLO USERNAME
+    // ============================================
+
+    const {
+      data: usernameEsistente,
+    } = await adminClient
+      .from("profiles")
+      .select("id")
+      .ilike("username", username)
+      .maybeSingle();
 
     if (usernameEsistente) {
       return NextResponse.json(
         {
-          error: "Questo username è già utilizzato.",
+          error:
+            "Questo username è già utilizzato.",
         },
-        { status: 409 }
+        {
+          status: 409,
+        }
       );
     }
 
-    /*
-     * Supabase Auth richiede un'email.
-     * La generiamo internamente.
-     * Il dipendente NON dovrà usarla:
-     * entrerà nel sito con username + password.
-     */
+    // ============================================
+    // EMAIL TECNICA
+    // ============================================
+
     const emailTecnica =
       `${username}@armeria200.local`;
 
-    // Crea l'utente Auth
+    // ============================================
+    // CREA ACCOUNT AUTH
+    // ============================================
+
     const {
       data: nuovoUtente,
       error: createError,
-    } = await adminClient.auth.admin.createUser({
-      email: emailTecnica,
-      password,
-      email_confirm: true,
+    } =
+      await adminClient.auth.admin.createUser({
+        email: emailTecnica,
+        password,
+        email_confirm: true,
 
-      user_metadata: {
-        nome,
-        cognome,
-      },
-    });
+        user_metadata: {
+          nome,
+          cognome,
+        },
+      });
 
     if (createError) {
       return NextResponse.json(
@@ -199,64 +270,90 @@ export async function POST(request) {
             createError.message ||
             "Errore durante la creazione dell'utente.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    const userId = nuovoUtente.user.id;
+    const userId =
+      nuovoUtente.user.id;
 
-    /*
-     * Il trigger che abbiamo creato in Supabase
-     * genera automaticamente il profilo.
-     * Ora lo completiamo.
-     */
-    const { error: profileError } =
-      await adminClient
-        .from("profiles")
-        .update({
-          nome,
-          cognome,
-          username,
-          ruolo: "dipendente",
-          percentuale_stipendio: percentuale,
-          attivo: true,
-        })
-        .eq("id", userId);
+    // ============================================
+    // COMPLETA PROFILO
+    // ============================================
+
+    const {
+      error: profileError,
+    } = await adminClient
+      .from("profiles")
+      .update({
+        nome,
+        cognome,
+        username,
+
+        // Permessi del gestionale
+        ruolo: "dipendente",
+
+        // Ruolo lavorativo Armeria
+        grado,
+
+        // Il trigger Supabase assegna
+        // automaticamente la percentuale
+        attivo: true,
+      })
+      .eq("id", userId);
 
     if (profileError) {
-      // Se qualcosa va storto eliminiamo anche l'utente Auth
-      // per non lasciare account incompleti.
-      await adminClient.auth.admin.deleteUser(userId);
+      await adminClient.auth.admin.deleteUser(
+        userId
+      );
 
       return NextResponse.json(
         {
           error:
             "Errore durante la creazione del profilo dipendente.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
+    // ============================================
+    // RISPOSTA
+    // ============================================
+
     return NextResponse.json({
       success: true,
-      message: "Dipendente creato correttamente.",
+
+      message:
+        "Dipendente creato correttamente.",
+
       user: {
         id: userId,
         nome,
         cognome,
         username,
-        percentuale_stipendio: percentuale,
+        grado,
+        percentuale_stipendio:
+          GRADI[grado],
       },
     });
   } catch (error) {
-    console.error("CREATE USER ERROR:", error);
+    console.error(
+      "CREATE USER ERROR:",
+      error
+    );
 
     return NextResponse.json(
       {
         error:
           "Errore interno durante la creazione del dipendente.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
