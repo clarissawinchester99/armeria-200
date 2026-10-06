@@ -165,57 +165,65 @@ export default function AdminPage() {
   // FATTURE
   // ==============================
 
-  async function caricaFatture() {
-    const { data, error } = await supabase
-      .from("invoices")
-      .select(`
-        id,
-        employee_id,
-        totale,
-        annullata,
-        created_at,
-        profiles (
-          nome,
-          cognome,
-          username,
-          grado
-        )
-      `)
-      .order("created_at", {
-        ascending: false,
-      });
+async function caricaFatture() {
+  const { data, error } = await supabase
+    .from("invoices")
+    .select(`
+      id,
+      employee_id,
+      employee_nome,
+      employee_cognome,
+      employee_username,
+      employee_grado,
+      totale,
+      annullata,
+      created_at,
+      profiles (
+        nome,
+        cognome,
+        username,
+        grado
+      )
+    `)
+    .order("created_at", {
+      ascending: false,
+    });
 
-    if (error) {
-      throw error;
-    }
-
-    setFatture(data || []);
+  if (error) {
+    throw error;
   }
 
+  setFatture(data || []);
+}
+  
   // ==============================
   // IMPORT
   // ==============================
 
-  async function caricaImports() {
-    const { data, error } = await supabase
-      .from("imports")
-      .select(`
-        id,
-        employee_id,
-        totale,
-        annullato,
-        created_at
-      `)
-      .order("created_at", {
-        ascending: false,
-      });
+async function caricaImports() {
+  const { data, error } = await supabase
+    .from("imports")
+    .select(`
+      id,
+      employee_id,
+      employee_nome,
+      employee_cognome,
+      employee_username,
+      employee_grado,
+      totale,
+      annullato,
+      created_at
+    `)
+    .order("created_at", {
+      ascending: false,
+    });
 
-    if (error) {
-      throw error;
-    }
-
-    setImports(data || []);
+  if (error) {
+    throw error;
   }
+
+  setImports(data || []);
+}
 
   // ==============================
   // CREA DIPENDENTE
@@ -1367,220 +1375,197 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* FATTURE */}
+      {/* FATTURE */}
 
-        <div>
-          <h2
+<div>
+  <h2
+    style={{
+      marginBottom: "15px",
+      textTransform: "uppercase",
+      letterSpacing: "2px",
+    }}
+  >
+    Ultime Fatture
+  </h2>
+
+  {fatture.length === 0 ? (
+    <div className="card">
+      <p
+        style={{
+          color: "#777",
+        }}
+      >
+        Nessuna fattura registrata.
+      </p>
+    </div>
+  ) : (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      {fatture.map((fattura) => {
+        const nomeProfilo =
+          `${
+            fattura.profiles?.nome || ""
+          } ${
+            fattura.profiles?.cognome || ""
+          }`.trim();
+
+        const nomeStorico =
+          `${
+            fattura.employee_nome || ""
+          } ${
+            fattura.employee_cognome || ""
+          }`.trim();
+
+        const nome =
+          nomeProfilo ||
+          nomeStorico ||
+          fattura.profiles?.username ||
+          fattura.employee_username ||
+          "Dipendente eliminato";
+
+        const grado =
+          fattura.profiles?.grado ||
+          fattura.employee_grado ||
+          "Grado non disponibile";
+
+        const accountEliminato =
+          !fattura.employee_id;
+
+        return (
+          <div
+            className="card"
+            key={fattura.id}
             style={{
-              marginBottom: "15px",
-              textTransform: "uppercase",
-              letterSpacing: "2px",
+              opacity: fattura.annullata
+                ? 0.55
+                : 1,
             }}
           >
-            Ultime Fatture
-          </h2>
-
-          {fatture.length === 0 ? (
-            <div className="card">
-              <p
-                style={{
-                  color: "#777",
-                }}
-              >
-                Nessuna fattura
-                registrata.
-              </p>
-            </div>
-          ) : (
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
-                gap: "12px",
+                justifyContent:
+                  "space-between",
+                alignItems: "center",
+                gap: "20px",
+                flexWrap: "wrap",
               }}
             >
-              {fatture.map(
-                (fattura) => {
-                  const nome =
-                    `${
-                      fattura.profiles
-                        ?.nome || ""
-                    } ${
-                      fattura.profiles
-                        ?.cognome || ""
-                    }`.trim();
+              <div>
+                <div
+                  style={{
+                    fontWeight: "900",
+                    fontSize: "16px",
+                  }}
+                >
+                  {nome}
+                </div>
 
-                  return (
-                    <div
-                      className="card"
-                      key={fattura.id}
-                      style={{
-                        opacity:
-                          fattura.annullata
-                            ? 0.55
-                            : 1,
-                      }}
-                    >
-                      <div
+                <div
+                  style={{
+                    color: "#777",
+                    fontSize: "12px",
+                    marginTop: "4px",
+                  }}
+                >
+                  {grado}
+
+                  {accountEliminato && (
+                    <>
+                      {" • "}
+
+                      <span
                         style={{
-                          display:
-                            "flex",
-                          justifyContent:
-                            "space-between",
-                          alignItems:
-                            "center",
-                          gap: "20px",
-                          flexWrap:
-                            "wrap",
+                          color: "#c42a2a",
+                          fontWeight: "900",
                         }}
                       >
-                        <div>
-                          <div
-                            style={{
-                              fontWeight:
-                                "900",
-                              fontSize:
-                                "16px",
-                            }}
-                          >
-                            {nome ||
-                              "Dipendente eliminato"}
-                          </div>
+                        ACCOUNT ELIMINATO
+                      </span>
+                    </>
+                  )}
 
-                          <div
-                            style={{
-                              color:
-                                "#777",
-                              fontSize:
-                                "12px",
-                              marginTop:
-                                "4px",
-                            }}
-                          >
-                            {fattura
-                              .profiles
-                              ?.grado ||
-                              "Account eliminato"}{" "}
-                            •{" "}
-                            {formattaData(
-                              fattura.created_at
-                            )}
-                          </div>
+                  {" • "}
 
-                          {fattura.annullata && (
-                            <div
-                              style={{
-                                color:
-                                  "#c42a2a",
-                                fontWeight:
-                                  "900",
-                                fontSize:
-                                  "11px",
-                                marginTop:
-                                  "7px",
-                              }}
-                            >
-                              FATTURA
-                              ANNULLATA
-                            </div>
-                          )}
-                        </div>
+                  {formattaData(
+                    fattura.created_at
+                  )}
+                </div>
 
-                        <div
-                          style={{
-                            display:
-                              "flex",
-                            alignItems:
-                              "center",
-                            gap: "15px",
-                            flexWrap:
-                              "wrap",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize:
-                                "20px",
-                              fontWeight:
-                                "900",
-                            }}
-                          >
-                            {formattaSoldi(
-                              fattura.totale
-                            )}
-                          </div>
+                {fattura.annullata && (
+                  <div
+                    style={{
+                      color: "#c42a2a",
+                      fontWeight: "900",
+                      fontSize: "11px",
+                      marginTop: "7px",
+                    }}
+                  >
+                    FATTURA ANNULLATA
+                  </div>
+                )}
+              </div>
 
-                          {fattura.annullata ? (
-                            <button
-                              className="btn btn-dark"
-                              disabled={
-                                azioneFattura ===
-                                fattura.id
-                              }
-                              onClick={() =>
-                                ripristinaFattura(
-                                  fattura
-                                )
-                              }
-                            >
-                              Ripristina
-                            </button>
-                          ) : (
-                            <button
-                              className="btn btn-dark"
-                              disabled={
-                                azioneFattura ===
-                                fattura.id
-                              }
-                              onClick={() =>
-                                annullaFattura(
-                                  fattura
-                                )
-                              }
-                            >
-                              Annulla
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-              )}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "15px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "900",
+                  }}
+                >
+                  {formattaSoldi(
+                    fattura.totale
+                  )}
+                </div>
+
+                {fattura.annullata ? (
+                  <button
+                    className="btn btn-dark"
+                    disabled={
+                      azioneFattura ===
+                      fattura.id
+                    }
+                    onClick={() =>
+                      ripristinaFattura(
+                        fattura
+                      )
+                    }
+                  >
+                    Ripristina
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-dark"
+                    disabled={
+                      azioneFattura ===
+                      fattura.id
+                    }
+                    onClick={() =>
+                      annullaFattura(
+                        fattura
+                      )
+                    }
+                  >
+                    Annulla
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function StatCard({
-  titolo,
-  valore,
-}) {
-  return (
-    <div className="card">
-      <div
-        style={{
-          color: "#777",
-          fontSize: "11px",
-          textTransform: "uppercase",
-          letterSpacing: "1.5px",
-          marginBottom: "10px",
-        }}
-      >
-        {titolo}
-      </div>
-
-      <div
-        style={{
-          fontSize: "28px",
-          fontWeight: "900",
-        }}
-      >
-        {valore}
-      </div>
+          </div>
+        );
+      })}
     </div>
-  );
-}
+  )}
+</div>
