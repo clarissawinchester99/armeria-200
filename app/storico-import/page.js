@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import Sidebar from "../../components/Sidebar";
 
 export default function StoricoImportPage() {
   const router = useRouter();
@@ -70,15 +71,6 @@ export default function StoricoImportPage() {
       // ==============================
       // CARICA IMPORT
       // ==============================
-      //
-      // La RLS decide automaticamente:
-      // dipendente = propri import
-      // admin = tutti gli import
-      //
-      // Carichiamo anche i dati storici
-      // del dipendente salvati direttamente
-      // nell'import.
-      // ==============================
 
       const {
         data: importData,
@@ -108,15 +100,7 @@ export default function StoricoImportPage() {
         importData || [];
 
       // ==============================
-      // CARICA DIPENDENTI ESISTENTI
-      // ==============================
-      //
-      // Se il dipendente esiste ancora,
-      // usiamo anche il suo profilo attuale.
-      //
-      // Se è stato eliminato, useremo
-      // invece i dati storici salvati
-      // direttamente nell'import.
+      // DIPENDENTI ESISTENTI
       // ==============================
 
       const employeeIds = [
@@ -163,7 +147,7 @@ export default function StoricoImportPage() {
       }
 
       // ==============================
-      // CARICA RIGHE IMPORT
+      // RIGHE IMPORT
       // ==============================
 
       const importIds =
@@ -278,16 +262,6 @@ export default function StoricoImportPage() {
   // ==============================
   // NOME DIPENDENTE
   // ==============================
-  //
-  // 1. Se il profilo esiste ancora,
-  //    usa i dati attuali.
-  //
-  // 2. Se il profilo è stato eliminato,
-  //    usa i dati storici dell'import.
-  //
-  // 3. Ultimo fallback:
-  //    "Dipendente eliminato".
-  // ==============================
 
   function nomeDipendente(ordine) {
     const nomeProfilo =
@@ -324,10 +298,6 @@ export default function StoricoImportPage() {
     );
   }
 
-  // ==============================
-  // USERNAME DIPENDENTE
-  // ==============================
-
   function usernameDipendente(
     ordine
   ) {
@@ -338,10 +308,6 @@ export default function StoricoImportPage() {
       ""
     );
   }
-
-  // ==============================
-  // GRADO DIPENDENTE
-  // ==============================
 
   function gradoDipendente(
     ordine
@@ -432,53 +398,64 @@ export default function StoricoImportPage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div>
-          <h2>
-            ARMERIA 200
-          </h2>
+      <>
+        <Sidebar />
 
-          <p
+        <main
+          style={{
+            minHeight: "100vh",
+            marginLeft: "250px",
+            padding: "30px",
+          }}
+        >
+          <div
+            className="container"
             style={{
-              color: "#777",
-              marginTop: "10px",
+              maxWidth: "1100px",
             }}
           >
-            Caricamento storico
-            import...
-          </p>
-        </div>
-      </main>
+            <h2>
+              ARMERIA 200
+            </h2>
+
+            <p
+              style={{
+                color: "#777",
+                marginTop: "10px",
+              }}
+            >
+              Caricamento storico import...
+            </p>
+          </div>
+        </main>
+      </>
     );
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "30px",
-      }}
-    >
-      <div
-        className="container"
+    <>
+      <Sidebar />
+
+      <main
         style={{
-          maxWidth: "1100px",
+          minHeight: "100vh",
+          marginLeft: "250px",
+          padding: "30px",
         }}
       >
-        {/* HEADER */}
-
         <div
+          className="container"
           style={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems: "center",
-            gap: "20px",
-            flexWrap: "wrap",
-            marginBottom: "35px",
+            maxWidth: "1100px",
           }}
         >
-          <div>
+          {/* HEADER */}
+
+          <div
+            style={{
+              marginBottom: "35px",
+            }}
+          >
             <div
               style={{
                 color: "#c42a2a",
@@ -496,582 +473,571 @@ export default function StoricoImportPage() {
             </h1>
 
             <p className="subtitle">
-              Ordini dei materiali
-              dell'Armeria
+              {admin
+                ? "Ordini dei materiali di tutti i dipendenti"
+                : "I tuoi ordini di materiali"}
             </p>
           </div>
 
-          <button
-            className="btn btn-dark"
-            onClick={() =>
-              router.push(
-                "/dashboard"
-              )
-            }
-          >
-            ← Dashboard
-          </button>
-        </div>
+          {/* RIEPILOGO */}
 
-        {/* RIEPILOGO */}
-
-        <div
-          style={{
-            display: "grid",
-
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
-
-            gap: "15px",
-            marginBottom: "30px",
-          }}
-        >
-          <StatCard
-            titolo={
-              admin
-                ? "Import registrati"
-                : "I tuoi import"
-            }
-            valore={
-              importValidi.length
-            }
-          />
-
-          <StatCard
-            titolo="Totale Import"
-            valore={formattaSoldi(
-              totaleImport
-            )}
-          />
-        </div>
-
-        {/* ERRORE */}
-
-        {errore && (
           <div
-            className="error-message"
             style={{
-              marginBottom:
-                "20px",
+              display: "grid",
+
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(220px, 1fr))",
+
+              gap: "15px",
+              marginBottom: "30px",
             }}
           >
-            {errore}
-          </div>
-        )}
-
-        {/* NESSUN IMPORT */}
-
-        {imports.length === 0 && (
-          <div
-            className="card"
-            style={{
-              textAlign: "center",
-              padding: "45px 20px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "20px",
-                fontWeight: "900",
-                marginBottom: "10px",
-              }}
-            >
-              Nessun import
-              registrato
-            </div>
-
-            <div
-              style={{
-                color: "#777",
-                fontSize: "13px",
-                marginBottom: "20px",
-              }}
-            >
-              Gli ordini dei materiali
-              compariranno qui.
-            </div>
-
-            <button
-              className="btn btn-primary"
-              onClick={() =>
-                router.push(
-                  "/import"
-                )
+            <StatCard
+              titolo={
+                admin
+                  ? "Import registrati"
+                  : "I tuoi import"
               }
-            >
-              Nuovo Import
-            </button>
+              valore={
+                importValidi.length
+              }
+            />
+
+            <StatCard
+              titolo="Totale Import"
+              valore={formattaSoldi(
+                totaleImport
+              )}
+            />
           </div>
-        )}
 
-        {/* LISTA IMPORT */}
+          {/* ERRORE */}
 
-        <div
-          style={{
-            display: "grid",
-            gap: "15px",
-          }}
-        >
-          {imports.map(
-            (ordine) => {
-              const dettagliAperti =
-                aperto === ordine.id;
+          {errore && (
+            <div
+              className="error-message"
+              style={{
+                marginBottom:
+                  "20px",
+              }}
+            >
+              {errore}
+            </div>
+          )}
 
-              const username =
-                usernameDipendente(
-                  ordine
-                );
+          {/* NESSUN IMPORT */}
 
-              const grado =
-                gradoDipendente(
-                  ordine
-                );
+          {imports.length === 0 && (
+            <div
+              className="card"
+              style={{
+                textAlign: "center",
+                padding: "45px 20px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "900",
+                  marginBottom: "10px",
+                }}
+              >
+                Nessun import registrato
+              </div>
 
-              const dipendenteEliminato =
-                !ordine.employee_id;
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "13px",
+                  marginBottom: "20px",
+                }}
+              >
+                Gli ordini dei materiali
+                compariranno qui.
+              </div>
 
-              return (
-                <div
-                  className="card"
-                  key={ordine.id}
-                  style={{
-                    opacity:
-                      ordine.annullato
-                        ? 0.55
-                        : 1,
+              <button
+                className="btn btn-primary"
+                onClick={() =>
+                  router.push(
+                    "/import"
+                  )
+                }
+              >
+                Nuovo Import
+              </button>
+            </div>
+          )}
 
-                    border:
-                      ordine.annullato
-                        ? "1px solid rgba(196,42,42,.35)"
-                        : undefined,
-                  }}
-                >
-                  {/* TESTATA IMPORT */}
+          {/* LISTA IMPORT */}
 
+          <div
+            style={{
+              display: "grid",
+              gap: "15px",
+            }}
+          >
+            {imports.map(
+              (ordine) => {
+                const dettagliAperti =
+                  aperto === ordine.id;
+
+                const username =
+                  usernameDipendente(
+                    ordine
+                  );
+
+                const grado =
+                  gradoDipendente(
+                    ordine
+                  );
+
+                const dipendenteEliminato =
+                  !ordine.employee_id;
+
+                return (
                   <div
+                    className="card"
+                    key={ordine.id}
                     style={{
-                      display:
-                        "flex",
+                      opacity:
+                        ordine.annullato
+                          ? 0.55
+                          : 1,
 
-                      justifyContent:
-                        "space-between",
-
-                      alignItems:
-                        "center",
-
-                      gap: "20px",
-
-                      flexWrap:
-                        "wrap",
+                      border:
+                        ordine.annullato
+                          ? "1px solid rgba(196,42,42,.35)"
+                          : undefined,
                     }}
                   >
-                    <div>
-                      <div
-                        style={{
-                          color:
-                            "#777",
+                    {/* TESTATA */}
 
-                          fontSize:
-                            "11px",
+                    <div
+                      style={{
+                        display:
+                          "flex",
 
-                          textTransform:
-                            "uppercase",
+                        justifyContent:
+                          "space-between",
 
-                          letterSpacing:
-                            "1.5px",
+                        alignItems:
+                          "center",
 
-                          marginBottom:
-                            "7px",
-                        }}
-                      >
-                        {formattaData(
-                          ordine.created_at
-                        )}
-                      </div>
+                        gap: "20px",
 
-                      <div
-                        style={{
-                          fontSize:
-                            "19px",
+                        flexWrap:
+                          "wrap",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            color:
+                              "#777",
 
-                          fontWeight:
-                            "900",
-                        }}
-                      >
-                        {nomeDipendente(
-                          ordine
-                        )}
-                      </div>
+                            fontSize:
+                              "11px",
 
-                      {admin &&
-                        username && (
+                            textTransform:
+                              "uppercase",
+
+                            letterSpacing:
+                              "1.5px",
+
+                            marginBottom:
+                              "7px",
+                          }}
+                        >
+                          {formattaData(
+                            ordine.created_at
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize:
+                              "19px",
+
+                            fontWeight:
+                              "900",
+                          }}
+                        >
+                          {nomeDipendente(
+                            ordine
+                          )}
+                        </div>
+
+                        {admin &&
+                          username && (
+                            <div
+                              style={{
+                                color:
+                                  "#777",
+
+                                fontSize:
+                                  "12px",
+
+                                marginTop:
+                                  "4px",
+                              }}
+                            >
+                              @{username}
+                            </div>
+                          )}
+
+                        {admin &&
+                          grado && (
+                            <div
+                              style={{
+                                color:
+                                  "#777",
+
+                                fontSize:
+                                  "12px",
+
+                                marginTop:
+                                  "3px",
+                              }}
+                            >
+                              {grado}
+                            </div>
+                          )}
+
+                        {admin &&
+                          dipendenteEliminato && (
+                            <div
+                              style={{
+                                color:
+                                  "#c42a2a",
+
+                                fontSize:
+                                  "10px",
+
+                                fontWeight:
+                                  "900",
+
+                                marginTop:
+                                  "6px",
+
+                                letterSpacing:
+                                  "1px",
+                              }}
+                            >
+                              ACCOUNT ELIMINATO
+                            </div>
+                          )}
+
+                        {ordine.annullato && (
                           <div
                             style={{
                               color:
-                                "#777",
+                                "#e64b4b",
 
                               fontSize:
-                                "12px",
-
-                              marginTop:
-                                "4px",
-                            }}
-                          >
-                            @{username}
-                          </div>
-                        )}
-
-                      {admin &&
-                        grado && (
-                          <div
-                            style={{
-                              color:
-                                "#777",
-
-                              fontSize:
-                                "12px",
-
-                              marginTop:
-                                "3px",
-                            }}
-                          >
-                            {grado}
-                          </div>
-                        )}
-
-                      {admin &&
-                        dipendenteEliminato && (
-                          <div
-                            style={{
-                              color:
-                                "#c42a2a",
-
-                              fontSize:
-                                "10px",
+                                "11px",
 
                               fontWeight:
                                 "900",
 
                               marginTop:
-                                "6px",
+                                "8px",
 
                               letterSpacing:
                                 "1px",
                             }}
                           >
-                            ACCOUNT ELIMINATO
+                            IMPORT ANNULLATO
                           </div>
                         )}
+                      </div>
 
-                      {ordine.annullato && (
+                      <div
+                        style={{
+                          textAlign:
+                            "right",
+                        }}
+                      >
                         <div
                           style={{
                             color:
-                              "#e64b4b",
+                              "#777",
 
                             fontSize:
-                              "11px",
+                              "10px",
 
-                            fontWeight:
-                              "900",
-
-                            marginTop:
-                              "8px",
+                            textTransform:
+                              "uppercase",
 
                             letterSpacing:
                               "1px",
                           }}
                         >
-                          IMPORT ANNULLATO
+                          Totale
                         </div>
-                      )}
-                    </div>
 
-                    <div
-                      style={{
-                        textAlign:
-                          "right",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color:
-                            "#777",
-
-                          fontSize:
-                            "10px",
-
-                          textTransform:
-                            "uppercase",
-
-                          letterSpacing:
-                            "1px",
-                        }}
-                      >
-                        Totale
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize:
-                            "26px",
-
-                          fontWeight:
-                            "900",
-
-                          color:
-                            ordine.annullato
-                              ? "#777"
-                              : "#fff",
-                        }}
-                      >
-                        {formattaSoldi(
-                          ordine.totale
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* PULSANTI */}
-
-                  <div
-                    style={{
-                      display:
-                        "flex",
-
-                      gap: "10px",
-
-                      flexWrap:
-                        "wrap",
-
-                      marginTop:
-                        "20px",
-                    }}
-                  >
-                    <button
-                      className="btn btn-dark"
-                      onClick={() =>
-                        setAperto(
-                          dettagliAperti
-                            ? null
-                            : ordine.id
-                        )
-                      }
-                    >
-                      {dettagliAperti
-                        ? "Nascondi dettagli"
-                        : "Vedi dettagli"}
-                    </button>
-
-                    {admin && (
-                      <button
-                        className={
-                          ordine.annullato
-                            ? "btn btn-dark"
-                            : "btn btn-primary"
-                        }
-                        disabled={
-                          azione ===
-                          ordine.id
-                        }
-                        onClick={() =>
-                          cambiaStatoImport(
-                            ordine
-                          )
-                        }
-                      >
-                        {azione ===
-                        ordine.id
-                          ? "ATTENDI..."
-                          : ordine.annullato
-                          ? "Ripristina Import"
-                          : "Annulla Import"}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* DETTAGLI */}
-
-                  {dettagliAperti && (
-                    <div
-                      style={{
-                        marginTop:
-                          "25px",
-
-                        paddingTop:
-                          "20px",
-
-                        borderTop:
-                          "1px solid #222",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color:
-                            "#777",
-
-                          fontSize:
-                            "11px",
-
-                          textTransform:
-                            "uppercase",
-
-                          letterSpacing:
-                            "1.5px",
-
-                          marginBottom:
-                            "15px",
-                        }}
-                      >
-                        Materiali ordinati
-                      </div>
-
-                      <div
-                        style={{
-                          display:
-                            "grid",
-
-                          gap: "10px",
-                        }}
-                      >
-                        {ordine.materiali.map(
-                          (
-                            materiale
-                          ) => (
-                            <div
-                              key={
-                                materiale.id
-                              }
-                              style={{
-                                display:
-                                  "grid",
-
-                                gridTemplateColumns:
-                                  "minmax(120px, 1fr) auto auto",
-
-                                gap: "20px",
-
-                                alignItems:
-                                  "center",
-
-                                padding:
-                                  "12px 0",
-
-                                borderBottom:
-                                  "1px solid #1c1c1c",
-                              }}
-                            >
-                              <div>
-                                <div
-                                  style={{
-                                    fontWeight:
-                                      "800",
-                                  }}
-                                >
-                                  {
-                                    materiale.materiale
-                                  }
-                                </div>
-
-                                <div
-                                  style={{
-                                    color:
-                                      "#777",
-
-                                    fontSize:
-                                      "11px",
-
-                                    marginTop:
-                                      "3px",
-                                  }}
-                                >
-                                  {formattaSoldi(
-                                    materiale.prezzo_unitario
-                                  )}{" "}
-                                  cad.
-                                </div>
-                              </div>
-
-                              <div
-                                style={{
-                                  color:
-                                    "#aaa",
-
-                                  fontSize:
-                                    "13px",
-                                }}
-                              >
-                                ×{" "}
-                                {
-                                  materiale.quantita
-                                }
-                              </div>
-
-                              <div
-                                style={{
-                                  fontWeight:
-                                    "900",
-
-                                  textAlign:
-                                    "right",
-                                }}
-                              >
-                                {formattaSoldi(
-                                  materiale.subtotale
-                                )}
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-
-                      <div
-                        style={{
-                          display:
-                            "flex",
-
-                          justifyContent:
-                            "space-between",
-
-                          alignItems:
-                            "center",
-
-                          gap: "20px",
-
-                          marginTop:
-                            "20px",
-
-                          paddingTop:
-                            "15px",
-                        }}
-                      >
-                        <strong>
-                          TOTALE ORDINE
-                        </strong>
-
-                        <strong
+                        <div
                           style={{
                             fontSize:
-                              "22px",
+                              "26px",
+
+                            fontWeight:
+                              "900",
 
                             color:
-                              "#c42a2a",
+                              ordine.annullato
+                                ? "#777"
+                                : "#fff",
                           }}
                         >
                           {formattaSoldi(
                             ordine.totale
                           )}
-                        </strong>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            }
-          )}
+
+                    {/* PULSANTI */}
+
+                    <div
+                      style={{
+                        display:
+                          "flex",
+
+                        gap: "10px",
+
+                        flexWrap:
+                          "wrap",
+
+                        marginTop:
+                          "20px",
+                      }}
+                    >
+                      <button
+                        className="btn btn-dark"
+                        onClick={() =>
+                          setAperto(
+                            dettagliAperti
+                              ? null
+                              : ordine.id
+                          )
+                        }
+                      >
+                        {dettagliAperti
+                          ? "Nascondi dettagli"
+                          : "Vedi dettagli"}
+                      </button>
+
+                      {admin && (
+                        <button
+                          className={
+                            ordine.annullato
+                              ? "btn btn-dark"
+                              : "btn btn-primary"
+                          }
+                          disabled={
+                            azione ===
+                            ordine.id
+                          }
+                          onClick={() =>
+                            cambiaStatoImport(
+                              ordine
+                            )
+                          }
+                        >
+                          {azione ===
+                          ordine.id
+                            ? "ATTENDI..."
+                            : ordine.annullato
+                            ? "Ripristina Import"
+                            : "Annulla Import"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* DETTAGLI */}
+
+                    {dettagliAperti && (
+                      <div
+                        style={{
+                          marginTop:
+                            "25px",
+
+                          paddingTop:
+                            "20px",
+
+                          borderTop:
+                            "1px solid #222",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color:
+                              "#777",
+
+                            fontSize:
+                              "11px",
+
+                            textTransform:
+                              "uppercase",
+
+                            letterSpacing:
+                              "1.5px",
+
+                            marginBottom:
+                              "15px",
+                          }}
+                        >
+                          Materiali ordinati
+                        </div>
+
+                        <div
+                          style={{
+                            display:
+                              "grid",
+
+                            gap: "10px",
+                          }}
+                        >
+                          {ordine.materiali.map(
+                            (
+                              materiale
+                            ) => (
+                              <div
+                                key={
+                                  materiale.id
+                                }
+                                style={{
+                                  display:
+                                    "grid",
+
+                                  gridTemplateColumns:
+                                    "minmax(120px, 1fr) auto auto",
+
+                                  gap: "20px",
+
+                                  alignItems:
+                                    "center",
+
+                                  padding:
+                                    "12px 0",
+
+                                  borderBottom:
+                                    "1px solid #1c1c1c",
+                                }}
+                              >
+                                <div>
+                                  <div
+                                    style={{
+                                      fontWeight:
+                                        "800",
+                                    }}
+                                  >
+                                    {
+                                      materiale.materiale
+                                    }
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      color:
+                                        "#777",
+
+                                      fontSize:
+                                        "11px",
+
+                                      marginTop:
+                                        "3px",
+                                    }}
+                                  >
+                                    {formattaSoldi(
+                                      materiale.prezzo_unitario
+                                    )}{" "}
+                                    cad.
+                                  </div>
+                                </div>
+
+                                <div
+                                  style={{
+                                    color:
+                                      "#aaa",
+
+                                    fontSize:
+                                      "13px",
+                                  }}
+                                >
+                                  ×{" "}
+                                  {
+                                    materiale.quantita
+                                  }
+                                </div>
+
+                                <div
+                                  style={{
+                                    fontWeight:
+                                      "900",
+
+                                    textAlign:
+                                      "right",
+                                  }}
+                                >
+                                  {formattaSoldi(
+                                    materiale.subtotale
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            display:
+                              "flex",
+
+                            justifyContent:
+                              "space-between",
+
+                            alignItems:
+                              "center",
+
+                            gap: "20px",
+
+                            marginTop:
+                              "20px",
+
+                            paddingTop:
+                              "15px",
+                          }}
+                        >
+                          <strong>
+                            TOTALE ORDINE
+                          </strong>
+
+                          <strong
+                            style={{
+                              fontSize:
+                                "22px",
+
+                              color:
+                                "#c42a2a",
+                            }}
+                          >
+                            {formattaSoldi(
+                              ordine.totale
+                            )}
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+            )}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
 
