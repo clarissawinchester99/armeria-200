@@ -32,27 +32,34 @@ export default function DashboardPage() {
       }
 
       // PROFILO
-      const { data: profiloData, error: profiloError } =
-        await supabase
-          .from("profiles")
-          .select(`
-            id,
-            username,
-            nome,
-            cognome,
-            ruolo,
-            grado,
-            percentuale_stipendio,
-            attivo
-          `)
-          .eq("id", user.id)
-          .single();
+
+      const {
+        data: profiloData,
+        error: profiloError,
+      } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          username,
+          nome,
+          cognome,
+          ruolo,
+          grado,
+          percentuale_stipendio,
+          attivo
+        `)
+        .eq("id", user.id)
+        .single();
 
       if (profiloError || !profiloData) {
-        throw profiloError || new Error("Profilo non trovato");
+        throw (
+          profiloError ||
+          new Error("Profilo non trovato")
+        );
       }
 
       // ACCOUNT DISATTIVATO
+
       if (!profiloData.attivo) {
         await supabase.auth.signOut();
         router.replace("/login");
@@ -62,16 +69,19 @@ export default function DashboardPage() {
       setProfilo(profiloData);
 
       // STATISTICHE
-      const { data: statsData, error: statsError } =
-        await supabase
-          .from("employee_stats")
-          .select(`
-            numero_fatture,
-            fatturato,
-            stipendio
-          `)
-          .eq("id", user.id)
-          .maybeSingle();
+
+      const {
+        data: statsData,
+        error: statsError,
+      } = await supabase
+        .from("employee_stats")
+        .select(`
+          numero_fatture,
+          fatturato,
+          stipendio
+        `)
+        .eq("id", user.id)
+        .maybeSingle();
 
       if (statsError) {
         throw statsError;
@@ -366,6 +376,8 @@ export default function DashboardPage() {
             gap: "15px",
           }}
         >
+          {/* NUOVA FATTURA */}
+
           <MenuCard
             titolo="Nuova fattura"
             descrizione="Registra una nuova vendita dell'Armeria."
@@ -374,6 +386,20 @@ export default function DashboardPage() {
               router.push("/fatture")
             }
           />
+
+          {/* NUOVO IMPORT */}
+
+          <MenuCard
+            titolo="Nuovo Import"
+            descrizione="Registra un nuovo ordine di materiali per l'Armeria."
+            bottone="Registra Import"
+            onClick={() =>
+              router.push("/import")
+            }
+            evidenza
+          />
+
+          {/* STORICO FATTURE */}
 
           <MenuCard
             titolo="Storico fatture"
@@ -384,6 +410,8 @@ export default function DashboardPage() {
             }
           />
 
+          {/* STIPENDIO */}
+
           <MenuCard
             titolo="Stipendio"
             descrizione={`Controlla il tuo stipendio maturato al ${profilo.percentuale_stipendio}%.`}
@@ -393,10 +421,12 @@ export default function DashboardPage() {
             }
           />
 
+          {/* ADMIN */}
+
           {admin && (
             <MenuCard
               titolo="Pannello Admin"
-              descrizione="Gestisci personale, ruoli, fatture e stipendi."
+              descrizione="Gestisci personale, ruoli, fatture, stipendi e catalogo."
               bottone="Amministrazione"
               onClick={() =>
                 router.push("/admin")
@@ -446,7 +476,11 @@ function MenuCard({
   bottone,
   onClick,
   admin = false,
+  evidenza = false,
 }) {
+  const speciale =
+    admin || evidenza;
+
   return (
     <div
       className="card"
@@ -455,14 +489,14 @@ function MenuCard({
         flexDirection: "column",
         minHeight: "200px",
 
-        border: admin
+        border: speciale
           ? "1px solid rgba(139,30,30,.45)"
           : undefined,
       }}
     >
       <div
         style={{
-          color: admin
+          color: speciale
             ? "#c42a2a"
             : "#fff",
           fontSize: "18px",
@@ -488,7 +522,7 @@ function MenuCard({
 
       <button
         className={
-          admin
+          speciale
             ? "btn btn-primary"
             : "btn btn-dark"
         }
