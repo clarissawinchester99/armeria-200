@@ -16,16 +16,15 @@ export default function AdminPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [profilo, setProfilo] = useState(null);
-  const [dipendenti, setDipendenti] = useState([]);
-  const [fatture, setFatture] = useState([]);
-
   const [errore, setErrore] = useState("");
   const [successo, setSuccesso] = useState("");
 
+  const [dipendenti, setDipendenti] = useState([]);
+  const [fatture, setFatture] = useState([]);
+
+  const [creazione, setCreazione] = useState(false);
   const [salvataggio, setSalvataggio] = useState(null);
-  const [operazioneFattura, setOperazioneFattura] = useState(null);
-  const [creazioneDipendente, setCreazioneDipendente] = useState(false);
+  const [azioneFattura, setAzioneFattura] = useState(null);
 
   const [nuovoDipendente, setNuovoDipendente] = useState({
     nome: "",
@@ -53,115 +52,123 @@ export default function AdminPage() {
         return;
       }
 
-      const { data: profiloData, error: profiloError } =
+      const { data: profilo, error: profiloError } =
         await supabase
           .from("profiles")
-          .select("*")
+          .select("id, ruolo, attivo")
           .eq("id", user.id)
           .single();
 
-      if (profiloError || !profiloData) {
-        throw profiloError || new Error("Profilo non trovato");
-      }
-
       if (
-        profiloData.ruolo !== "admin" ||
-        !profiloData.attivo
+        profiloError ||
+        !profilo ||
+        profilo.ruolo !== "admin" ||
+        !profilo.attivo
       ) {
         router.replace("/dashboard");
         return;
       }
 
-      setProfilo(profiloData);
-
-      // STATISTICHE
-      const { data: statsData, error: statsError } =
-        await supabase
-          .from("employee_stats")
-          .select("*")
-          .order("nome");
-
-      if (statsError) {
-        throw statsError;
-      }
-
-      // PROFILI
-      const { data: profilesData, error: profilesError } =
-        await supabase
-          .from("profiles")
-          .select(`
-            id,
-            username,
-            nome,
-            cognome,
-            ruolo,
-            grado,
-            percentuale_stipendio,
-            attivo
-          `);
-
-      if (profilesError) {
-        throw profilesError;
-      }
-
-      const dipendentiCompleti = (statsData || []).map(
-        (stat) => {
-          const p = (profilesData || []).find(
-            (profilo) => profilo.id === stat.id
-          );
-
-          return {
-            ...stat,
-            username: p?.username || "",
-            grado: p?.grado || "Dipendente",
-            attivo: p?.attivo ?? true,
-          };
-        }
-      );
-
-      setDipendenti(dipendentiCompleti);
-
-      // ULTIME FATTURE
-      const { data: fattureData, error: fattureError } =
-        await supabase
-          .from("invoices")
-          .select(`
-            id,
-            totale,
-            annullata,
-            created_at,
-            employee_id,
-            profiles (
-              nome,
-              cognome,
-              username,
-              grado
-            )
-          `)
-          .order("created_at", {
-            ascending: false,
-          })
-          .limit(30);
-
-      if (fattureError) {
-        throw fattureError;
-      }
-
-      setFatture(fattureData || []);
+      await Promise.all([
+        caricaDipendenti(),
+        caricaFatture(),
+      ]);
     } catch (error) {
-      console.error("Errore admin:", error);
+      console.error(error);
 
       setErrore(
-        "Errore durante il caricamento del pannello amministratore."
+        "Errore durante il caricamento del pannello Admin."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  // ==================================================
-  // CREA DIPENDENTE
-  // ==================================================
+  async function caricaDipendenti() {
+    const { data: profili, error: profiliError } =
+      await supabase
+        .from("profiles")
+        .select(`
+          id,
+          nome,
+          cognome,
+          username,
+          ruolo,
+          grado,
+          percentuale_stipendio,
+          attivo,
+          created_at
+        `)
+        .order("created_at", {
+          ascending: true,
+        });
+
+    if (profiliError) {
+      throw profiliError;
+    }
+
+    const { data: statistiche, error: statisticheError } =
+      await supabase
+        .from("employee_stats")
+        .select(`
+          id,
+          numero_fatture,
+          fatturato,
+          stipendio
+        `);
+
+    if (statisticheError) {
+      throw statisticheError;
+    }
+
+    const statisticheMap = {};
+
+    (statistiche || []).forEach((stat) => {
+      statisticheMap[stat.id] = stat;
+    });
+
+    const risultato = (profili || []).map((profilo) => ({
+      ...profilo,
+      numero_fatture: Number(
+        statisticheMap[profilo.id]?.numero_fatture || 0
+      ),
+      fatturato: Number(
+        statisticheMap[profilo.id]?.fatturato || 0
+      ),
+      stipendio: Number(
+        statisticheMap[profilo.id]?.stipendio || 0
+      ),
+    }));
+
+    setDipendenti(risultato);
+  }
+
+  async function caricaFatture() {
+    const { data, error } = await supabase
+      .from("invoices")
+      .select(`
+        id,
+        employee_id,
+        totale,
+        annullata,
+        created_at,
+        profiles (
+          nome,
+          cognome,
+          username,
+          grado
+        )
+      `)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    setFatture(data || []);
+  }
 
   function modificaNuovoDipendente(campo, valore) {
     setNuovoDipendente((precedente) => ({
@@ -175,7 +182,7 @@ export default function AdminPage() {
 
     setErrore("");
     setSuccesso("");
-    setCreazioneDipendente(true);
+    setCreazione(true);
 
     try {
       const {
@@ -183,7 +190,9 @@ export default function AdminPage() {
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        throw new Error("Sessione non valida.");
+        throw new Error(
+          "Sessione non valida. Effettua nuovamente il login."
+        );
       }
 
       const response = await fetch(
@@ -197,9 +206,11 @@ export default function AdminPage() {
           },
 
           body: JSON.stringify({
-            nome: nuovoDipendente.nome,
-            cognome: nuovoDipendente.cognome,
-            username: nuovoDipendente.username,
+            nome: nuovoDipendente.nome.trim(),
+            cognome: nuovoDipendente.cognome.trim(),
+            username: nuovoDipendente.username
+              .trim()
+              .toLowerCase(),
             password: nuovoDipendente.password,
             grado: nuovoDipendente.grado,
           }),
@@ -216,7 +227,7 @@ export default function AdminPage() {
       }
 
       setSuccesso(
-        `${nuovoDipendente.nome} ${nuovoDipendente.cognome} assunto come ${nuovoDipendente.grado} al ${GRADI[nuovoDipendente.grado]}%.`
+        `Dipendente ${nuovoDipendente.nome} ${nuovoDipendente.cognome} creato correttamente.`
       );
 
       setNuovoDipendente({
@@ -227,7 +238,7 @@ export default function AdminPage() {
         grado: "Dipendente",
       });
 
-      await caricaAdmin();
+      await caricaDipendenti();
     } catch (error) {
       console.error(error);
 
@@ -236,13 +247,9 @@ export default function AdminPage() {
           "Errore durante la creazione del dipendente."
       );
     } finally {
-      setCreazioneDipendente(false);
+      setCreazione(false);
     }
   }
-
-  // ==================================================
-  // CAMBIO GRADO
-  // ==================================================
 
   async function cambiaGrado(dipendente, nuovoGrado) {
     setErrore("");
@@ -262,35 +269,33 @@ export default function AdminPage() {
       }
 
       setSuccesso(
-        `${nomeDipendente(dipendente)} ora è ${nuovoGrado} (${GRADI[nuovoGrado]}%).`
+        `${dipendente.nome} ${dipendente.cognome} ora è ${nuovoGrado} (${GRADI[nuovoGrado]}%).`
       );
 
-      await caricaAdmin();
+      await caricaDipendenti();
     } catch (error) {
       console.error(error);
 
       setErrore(
-        "Errore durante la modifica del ruolo."
+        "Errore durante la modifica del grado."
       );
     } finally {
       setSalvataggio(null);
     }
   }
 
-  // ==================================================
-  // ATTIVA / DISATTIVA
-  // ==================================================
-
-  async function cambiaStato(dipendente) {
+  async function cambiaStatoDipendente(dipendente) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
 
     try {
+      const nuovoStato = !dipendente.attivo;
+
       const { error } = await supabase
         .from("profiles")
         .update({
-          attivo: !dipendente.attivo,
+          attivo: nuovoStato,
         })
         .eq("id", dipendente.id);
 
@@ -299,12 +304,12 @@ export default function AdminPage() {
       }
 
       setSuccesso(
-        dipendente.attivo
-          ? "Dipendente disattivato."
-          : "Dipendente riattivato."
+        nuovoStato
+          ? `${dipendente.nome} ${dipendente.cognome} riattivato.`
+          : `${dipendente.nome} ${dipendente.cognome} disattivato.`
       );
 
-      await caricaAdmin();
+      await caricaDipendenti();
     } catch (error) {
       console.error(error);
 
@@ -316,26 +321,16 @@ export default function AdminPage() {
     }
   }
 
-  // ==================================================
-  // FATTURE
-  // ==================================================
-
-  async function annullaFattura(id) {
-    const conferma = window.confirm(
-      "Vuoi annullare questa fattura? Non verrà più conteggiata nel fatturato e nello stipendio."
-    );
-
-    if (!conferma) return;
-
+  async function annullaFattura(fattura) {
     setErrore("");
     setSuccesso("");
-    setOperazioneFattura(id);
+    setAzioneFattura(fattura.id);
 
     try {
       const { error } = await supabase.rpc(
         "annulla_fattura",
         {
-          fattura_id: id,
+          fattura_id: fattura.id,
         }
       );
 
@@ -345,7 +340,10 @@ export default function AdminPage() {
 
       setSuccesso("Fattura annullata correttamente.");
 
-      await caricaAdmin();
+      await Promise.all([
+        caricaFatture(),
+        caricaDipendenti(),
+      ]);
     } catch (error) {
       console.error(error);
 
@@ -353,26 +351,20 @@ export default function AdminPage() {
         "Errore durante l'annullamento della fattura."
       );
     } finally {
-      setOperazioneFattura(null);
+      setAzioneFattura(null);
     }
   }
 
-  async function ripristinaFattura(id) {
-    const conferma = window.confirm(
-      "Vuoi ripristinare questa fattura?"
-    );
-
-    if (!conferma) return;
-
+  async function ripristinaFattura(fattura) {
     setErrore("");
     setSuccesso("");
-    setOperazioneFattura(id);
+    setAzioneFattura(fattura.id);
 
     try {
       const { error } = await supabase.rpc(
         "ripristina_fattura",
         {
-          fattura_id: id,
+          fattura_id: fattura.id,
         }
       );
 
@@ -382,7 +374,10 @@ export default function AdminPage() {
 
       setSuccesso("Fattura ripristinata correttamente.");
 
-      await caricaAdmin();
+      await Promise.all([
+        caricaFatture(),
+        caricaDipendenti(),
+      ]);
     } catch (error) {
       console.error(error);
 
@@ -390,23 +385,21 @@ export default function AdminPage() {
         "Errore durante il ripristino della fattura."
       );
     } finally {
-      setOperazioneFattura(null);
+      setAzioneFattura(null);
     }
   }
-
-  // ==================================================
-  // UTILITY
-  // ==================================================
 
   function formattaSoldi(numero) {
     return new Intl.NumberFormat("it-IT", {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(Number(numero || 0));
   }
 
   function formattaData(data) {
+    if (!data) return "";
+
     return new Intl.DateTimeFormat("it-IT", {
       day: "2-digit",
       month: "2-digit",
@@ -416,63 +409,40 @@ export default function AdminPage() {
     }).format(new Date(data));
   }
 
-  function nomeDipendente(dipendente) {
-    if (!dipendente) {
-      return "Dipendente";
-    }
+  const fattureValide = fatture.filter(
+    (fattura) => !fattura.annullata
+  );
 
-    const nome =
-      `${dipendente.nome || ""} ${dipendente.cognome || ""}`.trim();
+  const fatturatoTotale = fattureValide.reduce(
+    (totale, fattura) =>
+      totale + Number(fattura.totale || 0),
+    0
+  );
 
-    return nome || dipendente.username || "Dipendente";
-  }
-
-  // ==================================================
-  // LOADING
-  // ==================================================
+  const stipendiTotali = dipendenti.reduce(
+    (totale, dipendente) =>
+      totale + Number(dipendente.stipendio || 0),
+    0
+  );
 
   if (loading) {
     return (
       <main className="page">
         <div>
           <h2>ARMERIA 200</h2>
-          <p style={{ color: "#777", marginTop: "10px" }}>
-            Caricamento pannello admin...
+
+          <p
+            style={{
+              color: "#777",
+              marginTop: "10px",
+            }}
+          >
+            Caricamento pannello Admin...
           </p>
         </div>
       </main>
     );
   }
-
-  if (!profilo) {
-    return null;
-  }
-
-  // ==================================================
-  // TOTALI
-  // ==================================================
-
-  const fatturatoTotale = dipendenti.reduce(
-    (totale, d) =>
-      totale + Number(d.fatturato || 0),
-    0
-  );
-
-  const stipendiTotali = dipendenti.reduce(
-    (totale, d) =>
-      totale + Number(d.stipendio || 0),
-    0
-  );
-
-  const numeroFatture = dipendenti.reduce(
-    (totale, d) =>
-      totale + Number(d.numero_fatture || 0),
-    0
-  );
-
-  const numeroDipendenti = dipendenti.filter(
-    (d) => d.ruolo === "dipendente"
-  ).length;
 
   return (
     <main
@@ -481,8 +451,12 @@ export default function AdminPage() {
         padding: "30px",
       }}
     >
-      <div className="container">
-
+      <div
+        className="container"
+        style={{
+          maxWidth: "1200px",
+        }}
+      >
         {/* HEADER */}
 
         <div
@@ -505,15 +479,15 @@ export default function AdminPage() {
                 marginBottom: "6px",
               }}
             >
-              AMMINISTRAZIONE
+              ARMERIA 200
             </div>
 
             <h1 className="title">
-              ARMERIA 200
+              PANNELLO ADMIN
             </h1>
 
             <p className="subtitle">
-              Gestione dipendenti, ruoli, stipendi e fatture
+              Gestione completa dell'Armeria
             </p>
           </div>
 
@@ -527,12 +501,12 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* MESSAGGI */}
-
         {errore && (
           <div
             className="error-message"
-            style={{ marginBottom: "20px" }}
+            style={{
+              marginBottom: "20px",
+            }}
           >
             {errore}
           </div>
@@ -541,7 +515,9 @@ export default function AdminPage() {
         {successo && (
           <div
             className="success-message"
-            style={{ marginBottom: "20px" }}
+            style={{
+              marginBottom: "20px",
+            }}
           >
             {successo}
           </div>
@@ -553,7 +529,7 @@ export default function AdminPage() {
           style={{
             display: "grid",
             gridTemplateColumns:
-              "repeat(auto-fit, minmax(210px, 1fr))",
+              "repeat(auto-fit, minmax(220px, 1fr))",
             gap: "15px",
             marginBottom: "35px",
           }}
@@ -564,19 +540,83 @@ export default function AdminPage() {
           />
 
           <StatCard
+            titolo="Fatture valide"
+            valore={fattureValide.length}
+          />
+
+          <StatCard
             titolo="Stipendi maturati"
             valore={formattaSoldi(stipendiTotali)}
           />
 
           <StatCard
-            titolo="Fatture totali"
-            valore={numeroFatture}
+            titolo="Personale"
+            valore={dipendenti.length}
           />
+        </div>
 
-          <StatCard
-            titolo="Dipendenti"
-            valore={numeroDipendenti}
-          />
+        {/* GESTIONE CATALOGO */}
+
+        <div
+          className="card"
+          style={{
+            marginBottom: "35px",
+            border:
+              "1px solid rgba(139,30,30,.35)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "20px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: "#c42a2a",
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  letterSpacing: "3px",
+                  marginBottom: "7px",
+                }}
+              >
+                CATALOGO ARMERIA
+              </div>
+
+              <h2
+                style={{
+                  fontSize: "22px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Gestione Prodotti
+              </h2>
+
+              <p
+                style={{
+                  color: "#777",
+                  fontSize: "13px",
+                  marginTop: "7px",
+                }}
+              >
+                Aggiungi prodotti, modifica prezzi e
+                gestisci gli articoli disponibili.
+              </p>
+            </div>
+
+            <button
+              className="btn btn-primary"
+              onClick={() =>
+                router.push("/admin/catalogo")
+              }
+            >
+              Gestisci Catalogo
+            </button>
+          </div>
         </div>
 
         {/* CREA DIPENDENTE */}
@@ -584,12 +624,14 @@ export default function AdminPage() {
         <div
           className="card"
           style={{
-            marginBottom: "40px",
-            border:
-              "1px solid rgba(139,30,30,.35)",
+            marginBottom: "35px",
           }}
         >
-          <div style={{ marginBottom: "25px" }}>
+          <div
+            style={{
+              marginBottom: "22px",
+            }}
+          >
             <div
               style={{
                 color: "#c42a2a",
@@ -599,17 +641,10 @@ export default function AdminPage() {
                 marginBottom: "7px",
               }}
             >
-              NUOVA ASSUNZIONE
+              PERSONALE
             </div>
 
-            <h2
-              style={{
-                fontSize: "22px",
-                textTransform: "uppercase",
-              }}
-            >
-              Crea dipendente
-            </h2>
+            <h2>Assumi dipendente</h2>
           </div>
 
           <form onSubmit={creaDipendente}>
@@ -617,7 +652,7 @@ export default function AdminPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "repeat(auto-fit, minmax(190px, 1fr))",
+                  "repeat(auto-fit, minmax(180px, 1fr))",
                 gap: "15px",
               }}
             >
@@ -674,7 +709,6 @@ export default function AdminPage() {
 
                 <input
                   type="password"
-                  minLength={6}
                   value={nuovoDipendente.password}
                   onChange={(e) =>
                     modificaNuovoDipendente(
@@ -682,14 +716,13 @@ export default function AdminPage() {
                       e.target.value
                     )
                   }
+                  minLength={6}
                   required
                 />
               </div>
 
-              {/* TENDINA RUOLO */}
-
               <div className="form-group">
-                <label>Ruolo</label>
+                <label>Grado</label>
 
                 <select
                   value={nuovoDipendente.grado}
@@ -700,350 +733,399 @@ export default function AdminPage() {
                     )
                   }
                 >
-                  <option value="Dipendente">
-                    Dipendente — 20%
-                  </option>
-
-                  <option value="Armaiolo">
-                    Armaiolo — 25%
-                  </option>
-
-                  <option value="Vice-Direttore">
-                    Vice-Direttore — 30%
-                  </option>
-
-                  <option value="Direttore">
-                    Direttore — 40%
-                  </option>
-
-                  <option value="Proprietario">
-                    Proprietario — 45%
-                  </option>
+                  {Object.entries(GRADI).map(
+                    ([grado, percentuale]) => (
+                      <option
+                        key={grado}
+                        value={grado}
+                      >
+                        {grado} — {percentuale}%
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
-            </div>
-
-            <div
-              style={{
-                color: "#777",
-                fontSize: "13px",
-                marginBottom: "18px",
-              }}
-            >
-              Percentuale assegnata automaticamente:{" "}
-              <strong style={{ color: "#c42a2a" }}>
-                {GRADI[nuovoDipendente.grado]}%
-              </strong>
             </div>
 
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={creazioneDipendente}
+              disabled={creazione}
             >
-              {creazioneDipendente
+              {creazione
                 ? "Creazione..."
-                : "Assumi dipendente"}
+                : "Assumi Dipendente"}
             </button>
           </form>
         </div>
 
-        {/* DIPENDENTI */}
-
-        <h2
-          style={{
-            fontSize: "20px",
-            textTransform: "uppercase",
-            letterSpacing: "2px",
-            marginBottom: "15px",
-          }}
-        >
-          Personale
-        </h2>
+        {/* PERSONALE */}
 
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "15px",
-            marginBottom: "45px",
+            marginBottom: "40px",
           }}
         >
-          {dipendenti.map((dipendente) => (
-            <div
-              className="card"
-              key={dipendente.id}
-              style={{
-                opacity: dipendente.attivo ? 1 : 0.6,
-              }}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "minmax(180px, 1.5fr) repeat(3, minmax(110px, 1fr))",
-                  gap: "20px",
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: "800",
-                    }}
-                  >
-                    {nomeDipendente(dipendente)}
-                  </div>
+          <h2
+            style={{
+              marginBottom: "15px",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+            }}
+          >
+            Personale
+          </h2>
 
-                  <div
-                    style={{
-                      color: "#777",
-                      fontSize: "12px",
-                      marginTop: "5px",
-                    }}
-                  >
-                    @{dipendente.username || "utente"}
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#c42a2a",
-                      fontWeight: "800",
-                      fontSize: "13px",
-                      marginTop: "7px",
-                    }}
-                  >
-                    {dipendente.grado} —{" "}
-                    {dipendente.percentuale_stipendio}%
-                  </div>
-
-                  {!dipendente.attivo && (
-                    <div
-                      style={{
-                        color: "#d34b4b",
-                        fontSize: "11px",
-                        fontWeight: "bold",
-                        marginTop: "7px",
-                      }}
-                    >
-                      ACCOUNT DISATTIVATO
-                    </div>
-                  )}
-                </div>
-
-                <MiniDato
-                  titolo="Fatturato"
-                  valore={formattaSoldi(
-                    dipendente.fatturato
-                  )}
-                />
-
-                <MiniDato
-                  titolo="Stipendio"
-                  valore={formattaSoldi(
-                    dipendente.stipendio
-                  )}
-                />
-
-                <MiniDato
-                  titolo="Fatture"
-                  valore={dipendente.numero_fatture}
-                />
-              </div>
-
-              {/* CAMBIO RUOLO */}
-
-              {dipendente.ruolo !== "admin" && (
-                <div
-                  style={{
-                    borderTop: "1px solid #242424",
-                    marginTop: "20px",
-                    paddingTop: "20px",
-                    display: "flex",
-                    alignItems: "flex-end",
-                    gap: "12px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div style={{ width: "230px" }}>
-                    <label>Ruolo lavorativo</label>
-
-                    <select
-                      value={dipendente.grado}
-                      disabled={
-                        salvataggio === dipendente.id
-                      }
-                      onChange={(e) =>
-                        cambiaGrado(
-                          dipendente,
-                          e.target.value
-                        )
-                      }
-                      style={{ marginTop: "7px" }}
-                    >
-                      <option value="Dipendente">
-                        Dipendente — 20%
-                      </option>
-
-                      <option value="Armaiolo">
-                        Armaiolo — 25%
-                      </option>
-
-                      <option value="Vice-Direttore">
-                        Vice-Direttore — 30%
-                      </option>
-
-                      <option value="Direttore">
-                        Direttore — 40%
-                      </option>
-
-                      <option value="Proprietario">
-                        Proprietario — 45%
-                      </option>
-                    </select>
-                  </div>
-
-                  <button
-                    className="btn btn-dark"
-                    disabled={
-                      salvataggio === dipendente.id
-                    }
-                    onClick={() =>
-                      cambiaStato(dipendente)
-                    }
-                  >
-                    {dipendente.attivo
-                      ? "Disattiva"
-                      : "Riattiva"}
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* FATTURE */}
-
-        <h2
-          style={{
-            fontSize: "20px",
-            textTransform: "uppercase",
-            letterSpacing: "2px",
-            marginBottom: "15px",
-          }}
-        >
-          Ultime fatture
-        </h2>
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
-          {fatture.length === 0 ? (
-            <div className="card">
-              Nessuna fattura registrata.
-            </div>
-          ) : (
-            fatture.map((fattura) => (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "15px",
+            }}
+          >
+            {dipendenti.map((dipendente) => (
               <div
                 className="card"
-                key={fattura.id}
+                key={dipendente.id}
                 style={{
-                  padding: "20px",
-                  opacity: fattura.annullata
-                    ? 0.55
-                    : 1,
+                  opacity:
+                    dipendente.attivo ? 1 : 0.55,
                 }}
               >
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "20px",
-                    flexWrap: "wrap",
+                    justifyContent:
+                      "space-between",
+                    gap: "15px",
+                    marginBottom: "15px",
                   }}
                 >
                   <div>
                     <div
                       style={{
-                        fontSize: "19px",
-                        fontWeight: "800",
+                        fontSize: "18px",
+                        fontWeight: "900",
                       }}
                     >
-                      {formattaSoldi(fattura.totale)}
+                      {dipendente.nome}{" "}
+                      {dipendente.cognome}
                     </div>
 
                     <div
                       style={{
                         color: "#777",
                         fontSize: "12px",
-                        marginTop: "5px",
+                        marginTop: "4px",
                       }}
                     >
-                      {nomeDipendente(
-                        fattura.profiles
-                      )}
-                      {" • "}
-                      {fattura.profiles?.grado}
-                      {" • "}
-                      {formattaData(
-                        fattura.created_at
-                      )}
+                      @{dipendente.username || "—"}
                     </div>
-
-                    {fattura.annullata && (
-                      <div
-                        style={{
-                          color: "#d34b4b",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          marginTop: "7px",
-                        }}
-                      >
-                        FATTURA ANNULLATA
-                      </div>
-                    )}
                   </div>
 
-                  {fattura.annullata ? (
+                  <div
+                    style={{
+                      color: dipendente.attivo
+                        ? "#c42a2a"
+                        : "#777",
+                      fontSize: "11px",
+                      fontWeight: "900",
+                    }}
+                  >
+                    {dipendente.attivo
+                      ? "ATTIVO"
+                      : "DISATTIVATO"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    color: "#aaa",
+                    fontSize: "13px",
+                    lineHeight: "1.8",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <div>
+                    Grado:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {dipendente.grado}
+                    </strong>
+                  </div>
+
+                  <div>
+                    Percentuale:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {
+                        dipendente.percentuale_stipendio
+                      }
+                      %
+                    </strong>
+                  </div>
+
+                  <div>
+                    Fatture:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {dipendente.numero_fatture}
+                    </strong>
+                  </div>
+
+                  <div>
+                    Fatturato:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {formattaSoldi(
+                        dipendente.fatturato
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    Stipendio:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {formattaSoldi(
+                        dipendente.stipendio
+                      )}
+                    </strong>
+                  </div>
+                </div>
+
+                {dipendente.ruolo !== "admin" ? (
+                  <>
+                    <div className="form-group">
+                      <label>Grado</label>
+
+                      <select
+                        value={dipendente.grado}
+                        disabled={
+                          salvataggio === dipendente.id
+                        }
+                        onChange={(e) =>
+                          cambiaGrado(
+                            dipendente,
+                            e.target.value
+                          )
+                        }
+                      >
+                        {Object.entries(GRADI).map(
+                          ([grado, percentuale]) => (
+                            <option
+                              key={grado}
+                              value={grado}
+                            >
+                              {grado} — {percentuale}%
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+
                     <button
                       className="btn btn-dark"
                       disabled={
-                        operazioneFattura ===
-                        fattura.id
+                        salvataggio === dipendente.id
                       }
                       onClick={() =>
-                        ripristinaFattura(
-                          fattura.id
+                        cambiaStatoDipendente(
+                          dipendente
                         )
                       }
                     >
-                      Ripristina
+                      {dipendente.attivo
+                        ? "Disattiva Dipendente"
+                        : "Riattiva Dipendente"}
                     </button>
-                  ) : (
-                    <button
-                      className="btn btn-primary"
-                      disabled={
-                        operazioneFattura ===
-                        fattura.id
-                      }
-                      onClick={() =>
-                        annullaFattura(
-                          fattura.id
-                        )
-                      }
-                    >
-                      Annulla fattura
-                    </button>
-                  )}
-                </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      color: "#c42a2a",
+                      fontSize: "11px",
+                      fontWeight: "900",
+                      letterSpacing: "2px",
+                    }}
+                  >
+                    ACCOUNT AMMINISTRATORE
+                  </div>
+                )}
               </div>
-            ))
+            ))}
+          </div>
+        </div>
+
+        {/* FATTURE */}
+
+        <div>
+          <h2
+            style={{
+              marginBottom: "15px",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+            }}
+          >
+            Ultime Fatture
+          </h2>
+
+          {fatture.length === 0 ? (
+            <div className="card">
+              <p
+                style={{
+                  color: "#777",
+                }}
+              >
+                Nessuna fattura registrata.
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              {fatture.map((fattura) => {
+                const nome =
+                  `${fattura.profiles?.nome || ""} ${
+                    fattura.profiles?.cognome || ""
+                  }`.trim();
+
+                return (
+                  <div
+                    className="card"
+                    key={fattura.id}
+                    style={{
+                      opacity:
+                        fattura.annullata
+                          ? 0.55
+                          : 1,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent:
+                          "space-between",
+                        alignItems: "center",
+                        gap: "20px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            fontWeight: "900",
+                            fontSize: "16px",
+                          }}
+                        >
+                          {nome || "Dipendente"}
+                        </div>
+
+                        <div
+                          style={{
+                            color: "#777",
+                            fontSize: "12px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          {fattura.profiles?.grado ||
+                            "Dipendente"}{" "}
+                          •{" "}
+                          {formattaData(
+                            fattura.created_at
+                          )}
+                        </div>
+
+                        {fattura.annullata && (
+                          <div
+                            style={{
+                              color: "#c42a2a",
+                              fontWeight: "900",
+                              fontSize: "11px",
+                              marginTop: "7px",
+                            }}
+                          >
+                            FATTURA ANNULLATA
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "15px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "20px",
+                            fontWeight: "900",
+                          }}
+                        >
+                          {formattaSoldi(
+                            fattura.totale
+                          )}
+                        </div>
+
+                        {fattura.annullata ? (
+                          <button
+                            className="btn btn-dark"
+                            disabled={
+                              azioneFattura ===
+                              fattura.id
+                            }
+                            onClick={() =>
+                              ripristinaFattura(
+                                fattura
+                              )
+                            }
+                          >
+                            Ripristina
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-dark"
+                            disabled={
+                              azioneFattura ===
+                              fattura.id
+                            }
+                            onClick={() =>
+                              annullaFattura(
+                                fattura
+                              )
+                            }
+                          >
+                            Annulla
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
@@ -1060,7 +1142,7 @@ function StatCard({ titolo, valore }) {
           fontSize: "11px",
           textTransform: "uppercase",
           letterSpacing: "1.5px",
-          marginBottom: "9px",
+          marginBottom: "10px",
         }}
       >
         {titolo}
@@ -1068,34 +1150,8 @@ function StatCard({ titolo, valore }) {
 
       <div
         style={{
-          fontSize: "27px",
-          fontWeight: "800",
-        }}
-      >
-        {valore}
-      </div>
-    </div>
-  );
-}
-
-function MiniDato({ titolo, valore }) {
-  return (
-    <div>
-      <div
-        style={{
-          color: "#777",
-          fontSize: "10px",
-          textTransform: "uppercase",
-          letterSpacing: "1px",
-        }}
-      >
-        {titolo}
-      </div>
-
-      <div
-        style={{
-          fontWeight: "800",
-          marginTop: "5px",
+          fontSize: "28px",
+          fontWeight: "900",
         }}
       >
         {valore}
