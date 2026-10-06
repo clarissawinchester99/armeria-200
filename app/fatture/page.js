@@ -36,23 +36,37 @@ export default function FatturePage() {
 
       setUtente(user);
 
-      const { data: categorieData, error: categorieError } =
-        await supabase
-          .from("categories")
-          .select("*")
-          .eq("attiva", true)
-          .order("ordine");
+      // CARICA CATEGORIE
+      const {
+        data: categorieData,
+        error: categorieError,
+      } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("attiva", true)
+        .order("ordine", {
+          ascending: true,
+        });
 
       if (categorieError) {
         throw categorieError;
       }
 
-      const { data: prodottiData, error: prodottiError } =
-        await supabase
-          .from("products")
-          .select("*")
-          .eq("attivo", true)
-          .order("nome");
+      // CARICA PRODOTTI
+      // Ora vengono ordinati usando il campo "ordine"
+      const {
+        data: prodottiData,
+        error: prodottiError,
+      } = await supabase
+        .from("products")
+        .select("*")
+        .eq("attivo", true)
+        .order("ordine", {
+          ascending: true,
+        })
+        .order("nome", {
+          ascending: true,
+        });
 
       if (prodottiError) {
         throw prodottiError;
@@ -62,7 +76,10 @@ export default function FatturePage() {
       setProdotti(prodottiData || []);
     } catch (error) {
       console.error(error);
-      setErrore("Errore durante il caricamento dei prodotti.");
+
+      setErrore(
+        "Errore durante il caricamento dei prodotti."
+      );
     } finally {
       setLoading(false);
     }
@@ -113,7 +130,7 @@ export default function FatturePage() {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 0,
-    }).format(numero || 0);
+    }).format(Number(numero || 0));
   }
 
   async function creaFattura() {
@@ -139,41 +156,46 @@ export default function FatturePage() {
       return;
     }
 
+    if (!utente) {
+      setErrore(
+        "Utente non valido. Effettua nuovamente il login."
+      );
+      return;
+    }
+
     setSalvataggio(true);
 
     try {
       // CREA FATTURA
-
-      const { data: fattura, error: fatturaError } =
-        await supabase
-          .from("invoices")
-          .insert({
-            employee_id: utente.id,
-            totale: totale,
-          })
-          .select()
-          .single();
+      const {
+        data: fattura,
+        error: fatturaError,
+      } = await supabase
+        .from("invoices")
+        .insert({
+          employee_id: utente.id,
+          totale: totale,
+        })
+        .select()
+        .single();
 
       if (fatturaError) {
         throw fatturaError;
       }
 
-      // CREA RIGHE FATTURA
-
+      // CREA RIGHE DELLA FATTURA
+      // Salviamo nome e prezzo attuali.
+      // Se in futuro il catalogo cambia,
+      // le vecchie fatture rimangono corrette.
       const righe = selezionati.map(
         (prodotto) => ({
           invoice_id: fattura.id,
-
           product_id: prodotto.id,
-
           nome_prodotto: prodotto.nome,
-
           prezzo_unitario:
             Number(prodotto.prezzo),
-
           quantita:
             prodotto.quantita,
-
           subtotale:
             prodotto.subtotale,
         })
@@ -185,8 +207,8 @@ export default function FatturePage() {
           .insert(righe);
 
       if (righeError) {
-        // Se falliscono le righe,
-        // eliminiamo la fattura appena creata.
+        // Se le righe non vengono salvate,
+        // eliminiamo la fattura incompleta.
         await supabase
           .from("invoices")
           .delete()
@@ -282,15 +304,45 @@ export default function FatturePage() {
           </button>
         </div>
 
+        {/* EVENTUALE ERRORE DI CARICAMENTO */}
+
+        {errore && (
+          <div
+            className="error-message"
+            style={{
+              marginBottom: "20px",
+            }}
+          >
+            {errore}
+          </div>
+        )}
+
         {/* CATEGORIE */}
 
         {categorie.map((categoria) => {
           const prodottiCategoria =
-            prodotti.filter(
-              (prodotto) =>
-                prodotto.category_id ===
-                categoria.id
-            );
+            prodotti
+              .filter(
+                (prodotto) =>
+                  Number(prodotto.category_id) ===
+                  Number(categoria.id)
+              )
+              .sort((a, b) => {
+                const ordineA =
+                  Number(a.ordine || 0);
+
+                const ordineB =
+                  Number(b.ordine || 0);
+
+                if (ordineA !== ordineB) {
+                  return ordineA - ordineB;
+                }
+
+                return a.nome.localeCompare(
+                  b.nome,
+                  "it"
+                );
+              });
 
           return (
             <div
@@ -313,8 +365,7 @@ export default function FatturePage() {
                 {categoria.nome}
               </h2>
 
-              {prodottiCategoria.length ===
-              0 ? (
+              {prodottiCategoria.length === 0 ? (
                 <div
                   className="card"
                   style={{
@@ -322,9 +373,8 @@ export default function FatturePage() {
                     fontSize: "13px",
                   }}
                 >
-                  Nessun prodotto
-                  disponibile in questa
-                  categoria.
+                  Nessun prodotto disponibile
+                  in questa categoria.
                 </div>
               ) : (
                 <div
@@ -354,8 +404,7 @@ export default function FatturePage() {
                         >
                           <div
                             style={{
-                              display:
-                                "flex",
+                              display: "flex",
                               justifyContent:
                                 "space-between",
                               gap: "15px",
@@ -370,9 +419,7 @@ export default function FatturePage() {
                                     "17px",
                                 }}
                               >
-                                {
-                                  prodotto.nome
-                                }
+                                {prodotto.nome}
                               </h3>
 
                               <div
@@ -385,8 +432,7 @@ export default function FatturePage() {
                                     "5px",
                                 }}
                               >
-                                Prezzo
-                                unitario
+                                Prezzo unitario
                               </div>
                             </div>
 
@@ -418,8 +464,7 @@ export default function FatturePage() {
                             onChange={(e) =>
                               cambiaQuantita(
                                 prodotto.id,
-                                e.target
-                                  .value
+                                e.target.value
                               )
                             }
                             style={{
@@ -539,12 +584,6 @@ export default function FatturePage() {
                 : "REGISTRA FATTURA"}
             </button>
           </div>
-
-          {errore && (
-            <div className="error-message">
-              {errore}
-            </div>
-          )}
 
           {successo && (
             <div className="success-message">
