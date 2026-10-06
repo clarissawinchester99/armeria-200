@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import Sidebar from "../../components/Sidebar";
 
 export default function FatturePage() {
   const router = useRouter();
@@ -151,9 +152,11 @@ export default function FatturePage() {
   function prodottiSelezionati() {
     return prodotti
       .filter((prodotto) => {
-        return Number(
-          quantita[prodotto.id] || 0
-        ) > 0;
+        return (
+          Number(
+            quantita[prodotto.id] || 0
+          ) > 0
+        );
       })
       .map((prodotto) => {
         const qta = Number(
@@ -235,15 +238,6 @@ export default function FatturePage() {
       // ==============================
       // CREA FATTURA
       // ==============================
-      //
-      // Oltre all'ID del dipendente
-      // salviamo una copia dei suoi dati.
-      //
-      // In questo modo, se il dipendente
-      // verrà eliminato in futuro,
-      // lo storico continuerà a sapere
-      // chi aveva creato la fattura.
-      // ==============================
 
       const {
         data: fattura,
@@ -263,7 +257,8 @@ export default function FatturePage() {
             profilo.username || "",
 
           employee_grado:
-            profilo.grado || "Dipendente",
+            profilo.grado ||
+            "Dipendente",
 
           totale: totale,
         })
@@ -275,12 +270,7 @@ export default function FatturePage() {
       }
 
       // ==============================
-      // CREA RIGHE DELLA FATTURA
-      // ==============================
-      //
-      // Salviamo nome e prezzo attuali.
-      // Se in futuro il catalogo cambia,
-      // le vecchie fatture rimangono corrette.
+      // CREA RIGHE FATTURA
       // ==============================
 
       const righe = selezionati.map(
@@ -309,9 +299,6 @@ export default function FatturePage() {
           .insert(righe);
 
       if (righeError) {
-        // Se le righe non vengono salvate,
-        // eliminiamo la fattura incompleta.
-
         await supabase
           .from("invoices")
           .delete()
@@ -348,39 +335,45 @@ export default function FatturePage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div>
-          Caricamento prodotti...
-        </div>
-      </main>
+      <>
+        <Sidebar />
+
+        <main
+          style={{
+            minHeight: "100vh",
+            marginLeft: "250px",
+            padding: "30px",
+          }}
+        >
+          <div className="container">
+            Caricamento prodotti...
+          </div>
+        </main>
+      </>
     );
   }
 
   const totale = calcolaTotale();
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "30px",
-      }}
-    >
-      <div className="container">
+    <>
+      <Sidebar />
 
-        {/* HEADER */}
+      <main
+        style={{
+          minHeight: "100vh",
+          marginLeft: "250px",
+          padding: "30px",
+        }}
+      >
+        <div className="container">
+          {/* HEADER */}
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems: "center",
-            gap: "20px",
-            flexWrap: "wrap",
-            marginBottom: "35px",
-          }}
-        >
-          <div>
+          <div
+            style={{
+              marginBottom: "35px",
+            }}
+          >
             <div
               style={{
                 color: "#8b1e1e",
@@ -403,312 +396,332 @@ export default function FatturePage() {
             </p>
           </div>
 
-          <button
-            className="btn btn-dark"
-            onClick={() =>
-              router.push("/dashboard")
-            }
-          >
-            ← Dashboard
-          </button>
-        </div>
+          {/* EVENTUALE ERRORE */}
 
-        {/* EVENTUALE ERRORE */}
-
-        {errore && (
-          <div
-            className="error-message"
-            style={{
-              marginBottom: "20px",
-            }}
-          >
-            {errore}
-          </div>
-        )}
-
-        {/* CATEGORIE */}
-
-        {categorie.map((categoria) => {
-          const prodottiCategoria =
-            prodotti
-              .filter(
-                (prodotto) =>
-                  Number(
-                    prodotto.category_id
-                  ) ===
-                  Number(categoria.id)
-              )
-              .sort((a, b) => {
-                const ordineA =
-                  Number(a.ordine || 0);
-
-                const ordineB =
-                  Number(b.ordine || 0);
-
-                if (
-                  ordineA !== ordineB
-                ) {
-                  return ordineA - ordineB;
-                }
-
-                return a.nome.localeCompare(
-                  b.nome,
-                  "it"
-                );
-              });
-
-          return (
+          {errore && (
             <div
-              key={categoria.id}
+              className="error-message"
               style={{
-                marginBottom: "35px",
+                marginBottom: "20px",
               }}
             >
-              <h2
+              {errore}
+            </div>
+          )}
+
+          {/* CATEGORIE */}
+
+          {categorie.map((categoria) => {
+            const prodottiCategoria =
+              prodotti
+                .filter(
+                  (prodotto) =>
+                    Number(
+                      prodotto.category_id
+                    ) ===
+                    Number(categoria.id)
+                )
+                .sort((a, b) => {
+                  const ordineA =
+                    Number(a.ordine || 0);
+
+                  const ordineB =
+                    Number(b.ordine || 0);
+
+                  if (
+                    ordineA !== ordineB
+                  ) {
+                    return ordineA - ordineB;
+                  }
+
+                  return a.nome.localeCompare(
+                    b.nome,
+                    "it"
+                  );
+                });
+
+            return (
+              <div
+                key={categoria.id}
                 style={{
-                  fontSize: "18px",
-                  textTransform:
-                    "uppercase",
-                  letterSpacing: "2px",
-                  marginBottom: "15px",
-                  paddingBottom: "10px",
-                  borderBottom:
-                    "1px solid #292929",
+                  marginBottom: "35px",
                 }}
               >
-                {categoria.nome}
-              </h2>
-
-              {prodottiCategoria.length ===
-              0 ? (
-                <div
-                  className="card"
+                <h2
                   style={{
-                    color: "#666",
-                    fontSize: "13px",
+                    fontSize: "18px",
+                    textTransform:
+                      "uppercase",
+                    letterSpacing: "2px",
+                    marginBottom: "15px",
+                    paddingBottom: "10px",
+                    borderBottom:
+                      "1px solid #292929",
                   }}
                 >
-                  Nessun prodotto disponibile
-                  in questa categoria.
-                </div>
-              ) : (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fit, minmax(240px, 1fr))",
-                    gap: "15px",
-                  }}
-                >
-                  {prodottiCategoria.map(
-                    (prodotto) => {
-                      const qta =
-                        Number(
-                          quantita[
-                            prodotto.id
-                          ] || 0
-                        );
+                  {categoria.nome}
+                </h2>
 
-                      return (
-                        <div
-                          className="card"
-                          key={prodotto.id}
-                          style={{
-                            padding: "20px",
-                          }}
-                        >
+                {prodottiCategoria.length ===
+                0 ? (
+                  <div
+                    className="card"
+                    style={{
+                      color: "#666",
+                      fontSize: "13px",
+                    }}
+                  >
+                    Nessun prodotto disponibile
+                    in questa categoria.
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(240px, 1fr))",
+
+                      gap: "15px",
+                    }}
+                  >
+                    {prodottiCategoria.map(
+                      (prodotto) => {
+                        const qta =
+                          Number(
+                            quantita[
+                              prodotto.id
+                            ] || 0
+                          );
+
+                        return (
                           <div
+                            className="card"
+                            key={prodotto.id}
                             style={{
-                              display:
-                                "flex",
-                              justifyContent:
-                                "space-between",
-                              gap: "15px",
-                              marginBottom:
-                                "18px",
+                              padding:
+                                "20px",
                             }}
                           >
-                            <div>
-                              <h3
-                                style={{
-                                  fontSize:
-                                    "17px",
-                                }}
-                              >
-                                {prodotto.nome}
-                              </h3>
+                            <div
+                              style={{
+                                display:
+                                  "flex",
+
+                                justifyContent:
+                                  "space-between",
+
+                                gap: "15px",
+
+                                marginBottom:
+                                  "18px",
+                              }}
+                            >
+                              <div>
+                                <h3
+                                  style={{
+                                    fontSize:
+                                      "17px",
+                                  }}
+                                >
+                                  {
+                                    prodotto.nome
+                                  }
+                                </h3>
+
+                                <div
+                                  style={{
+                                    color:
+                                      "#777",
+
+                                    fontSize:
+                                      "12px",
+
+                                    marginTop:
+                                      "5px",
+                                  }}
+                                >
+                                  Prezzo unitario
+                                </div>
+                              </div>
 
                               <div
                                 style={{
                                   color:
-                                    "#777",
+                                    "#c42a2a",
+
+                                  fontWeight:
+                                    "bold",
+
                                   fontSize:
-                                    "12px",
-                                  marginTop:
-                                    "5px",
-                                }}
-                              >
-                                Prezzo unitario
-                              </div>
-                            </div>
-
-                            <div
-                              style={{
-                                color:
-                                  "#c42a2a",
-                                fontWeight:
-                                  "bold",
-                                fontSize:
-                                  "17px",
-                              }}
-                            >
-                              {formattaSoldi(
-                                prodotto.prezzo
-                              )}
-                            </div>
-                          </div>
-
-                          <label>
-                            Quantità
-                          </label>
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={qta}
-                            onChange={(e) =>
-                              cambiaQuantita(
-                                prodotto.id,
-                                e.target.value
-                              )
-                            }
-                            style={{
-                              marginTop:
-                                "8px",
-                            }}
-                          />
-
-                          {qta > 0 && (
-                            <div
-                              style={{
-                                marginTop:
-                                  "12px",
-                                paddingTop:
-                                  "12px",
-                                borderTop:
-                                  "1px solid #222",
-                                display:
-                                  "flex",
-                                justifyContent:
-                                  "space-between",
-                                color:
-                                  "#aaa",
-                                fontSize:
-                                  "13px",
-                              }}
-                            >
-                              <span>
-                                Subtotale
-                              </span>
-
-                              <strong
-                                style={{
-                                  color:
-                                    "#fff",
+                                    "17px",
                                 }}
                               >
                                 {formattaSoldi(
-                                  Number(
-                                    prodotto.prezzo
-                                  ) * qta
+                                  prodotto.prezzo
                                 )}
-                              </strong>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    }
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
 
-        {/* TOTALE */}
+                            <label>
+                              Quantità
+                            </label>
 
-        <div
-          className="card"
-          style={{
-            position: "sticky",
-            bottom: "20px",
-            marginTop: "30px",
-            border:
-              "1px solid rgba(139,30,30,.4)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent:
-                "space-between",
-              alignItems: "center",
-              gap: "25px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  color: "#777",
-                  fontSize: "11px",
-                  textTransform:
-                    "uppercase",
-                  letterSpacing:
-                    "2px",
-                }}
-              >
-                Totale fattura
-              </div>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={qta}
+                              onChange={(e) =>
+                                cambiaQuantita(
+                                  prodotto.id,
+                                  e.target.value
+                                )
+                              }
+                              style={{
+                                marginTop:
+                                  "8px",
+                              }}
+                            />
 
-              <div
-                style={{
-                  fontSize: "34px",
-                  fontWeight: "900",
-                  marginTop: "5px",
-                }}
-              >
-                {formattaSoldi(
-                  totale
+                            {qta > 0 && (
+                              <div
+                                style={{
+                                  marginTop:
+                                    "12px",
+
+                                  paddingTop:
+                                    "12px",
+
+                                  borderTop:
+                                    "1px solid #222",
+
+                                  display:
+                                    "flex",
+
+                                  justifyContent:
+                                    "space-between",
+
+                                  color:
+                                    "#aaa",
+
+                                  fontSize:
+                                    "13px",
+                                }}
+                              >
+                                <span>
+                                  Subtotale
+                                </span>
+
+                                <strong
+                                  style={{
+                                    color:
+                                      "#fff",
+                                  }}
+                                >
+                                  {formattaSoldi(
+                                    Number(
+                                      prodotto.prezzo
+                                    ) * qta
+                                  )}
+                                </strong>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
+            );
+          })}
 
-            <button
-              className="btn btn-primary"
-              onClick={creaFattura}
-              disabled={
-                salvataggio ||
-                totale <= 0
-              }
+          {/* TOTALE */}
+
+          <div
+            className="card"
+            style={{
+              position: "sticky",
+              bottom: "20px",
+              marginTop: "30px",
+
+              border:
+                "1px solid rgba(139,30,30,.4)",
+
+              boxShadow:
+                "0 -10px 30px rgba(0,0,0,.25)",
+            }}
+          >
+            <div
               style={{
-                minWidth: "220px",
+                display: "flex",
+
+                justifyContent:
+                  "space-between",
+
+                alignItems: "center",
+
+                gap: "25px",
+
+                flexWrap: "wrap",
               }}
             >
-              {salvataggio
-                ? "REGISTRAZIONE..."
-                : "REGISTRA FATTURA"}
-            </button>
-          </div>
+              <div>
+                <div
+                  style={{
+                    color: "#777",
 
-          {successo && (
-            <div className="success-message">
-              {successo}
+                    fontSize: "11px",
+
+                    textTransform:
+                      "uppercase",
+
+                    letterSpacing:
+                      "2px",
+                  }}
+                >
+                  Totale fattura
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "34px",
+                    fontWeight: "900",
+                    marginTop: "5px",
+                  }}
+                >
+                  {formattaSoldi(
+                    totale
+                  )}
+                </div>
+              </div>
+
+              <button
+                className="btn btn-primary"
+                onClick={creaFattura}
+                disabled={
+                  salvataggio ||
+                  totale <= 0
+                }
+                style={{
+                  minWidth: "220px",
+                }}
+              >
+                {salvataggio
+                  ? "REGISTRAZIONE..."
+                  : "REGISTRA FATTURA"}
+              </button>
             </div>
-          )}
+
+            {successo && (
+              <div className="success-message">
+                {successo}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
