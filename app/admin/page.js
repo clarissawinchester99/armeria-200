@@ -25,8 +25,8 @@ export default function AdminPage() {
 
   const [creazione, setCreazione] = useState(false);
   const [salvataggio, setSalvataggio] = useState(null);
-  const [azioneFattura, setAzioneFattura] = useState(null);
   const [eliminazione, setEliminazione] = useState(null);
+  const [azioneFattura, setAzioneFattura] = useState(null);
 
   const [nuovoDipendente, setNuovoDipendente] = useState({
     nome: "",
@@ -39,6 +39,10 @@ export default function AdminPage() {
   useEffect(() => {
     caricaAdmin();
   }, []);
+
+  // =========================================================
+  // CARICAMENTO GENERALE
+  // =========================================================
 
   async function caricaAdmin() {
     setLoading(true);
@@ -79,19 +83,23 @@ export default function AdminPage() {
         caricaImports(),
       ]);
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Errore caricamento Admin:",
+        error
+      );
 
       setErrore(
-        "Errore durante il caricamento del pannello Admin."
+        error?.message ||
+          "Errore durante il caricamento del pannello Admin."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  // ==============================
+  // =========================================================
   // DIPENDENTI
-  // ==============================
+  // =========================================================
 
   async function caricaDipendenti() {
     const {
@@ -136,98 +144,96 @@ export default function AdminPage() {
 
     const statisticheMap = {};
 
-    (statistiche || []).forEach((stat) => {
-      statisticheMap[stat.id] = stat;
+    (statistiche || []).forEach((statistica) => {
+      statisticheMap[statistica.id] = statistica;
     });
 
-    const risultato = (profili || []).map(
-      (profilo) => ({
-        ...profilo,
+    const risultato = (profili || []).map((profilo) => ({
+      ...profilo,
 
-        numero_fatture: Number(
-          statisticheMap[profilo.id]?.numero_fatture || 0
-        ),
+      numero_fatture: Number(
+        statisticheMap[profilo.id]?.numero_fatture || 0
+      ),
 
-        fatturato: Number(
-          statisticheMap[profilo.id]?.fatturato || 0
-        ),
+      fatturato: Number(
+        statisticheMap[profilo.id]?.fatturato || 0
+      ),
 
-        stipendio: Number(
-          statisticheMap[profilo.id]?.stipendio || 0
-        ),
-      })
-    );
+      stipendio: Number(
+        statisticheMap[profilo.id]?.stipendio || 0
+      ),
+    }));
 
     setDipendenti(risultato);
   }
 
-  // ==============================
+  // =========================================================
   // FATTURE
-  // ==============================
+  // =========================================================
 
-async function caricaFatture() {
-  const { data, error } = await supabase
-    .from("invoices")
-    .select(`
-      id,
-      employee_id,
-      employee_nome,
-      employee_cognome,
-      employee_username,
-      employee_grado,
-      totale,
-      annullata,
-      created_at,
-      profiles (
-        nome,
-        cognome,
-        username,
-        grado
-      )
-    `)
-    .order("created_at", {
-      ascending: false,
-    });
+  async function caricaFatture() {
+    const { data, error } = await supabase
+      .from("invoices")
+      .select(`
+        id,
+        employee_id,
+        employee_nome,
+        employee_cognome,
+        employee_username,
+        employee_grado,
+        totale,
+        annullata,
+        created_at,
+        profiles (
+          nome,
+          cognome,
+          username,
+          grado
+        )
+      `)
+      .order("created_at", {
+        ascending: false,
+      });
 
-  if (error) {
-    throw error;
+    if (error) {
+      throw error;
+    }
+
+    setFatture(data || []);
   }
 
-  setFatture(data || []);
-}
-  
-  // ==============================
+  // =========================================================
   // IMPORT
-  // ==============================
+  // =========================================================
 
-async function caricaImports() {
-  const { data, error } = await supabase
-    .from("imports")
-    .select(`
-      id,
-      employee_id,
-      employee_nome,
-      employee_cognome,
-      employee_username,
-      employee_grado,
-      totale,
-      annullato,
-      created_at
-    `)
-    .order("created_at", {
-      ascending: false,
-    });
+  async function caricaImports() {
+    const { data, error } = await supabase
+      .from("imports")
+      .select(`
+        id,
+        employee_id,
+        employee_nome,
+        employee_cognome,
+        employee_username,
+        employee_grado,
+        totale,
+        annullato,
+        created_at
+      `)
+      .order("created_at", {
+        ascending: false,
+      });
 
-  if (error) {
-    throw error;
+    if (error) {
+      throw error;
+    }
+
+    setImports(data || []);
   }
 
-  setImports(data || []);
-}
-
-  // ==============================
+  // =========================================================
   // CREA DIPENDENTE
-  // ==============================
+  // =========================================================
 
   function modificaNuovoDipendente(campo, valore) {
     setNuovoDipendente((precedente) => ({
@@ -236,8 +242,8 @@ async function caricaImports() {
     }));
   }
 
-  async function creaDipendente(e) {
-    e.preventDefault();
+  async function creaDipendente(evento) {
+    evento.preventDefault();
 
     setErrore("");
     setSuccesso("");
@@ -282,13 +288,13 @@ async function caricaImports() {
 
       if (!response.ok) {
         throw new Error(
-          risultato.error ||
+          risultato?.error ||
             "Errore durante la creazione del dipendente."
         );
       }
 
       setSuccesso(
-        `Dipendente ${nuovoDipendente.nome} ${nuovoDipendente.cognome} creato correttamente.`
+        `${nuovoDipendente.nome} ${nuovoDipendente.cognome} creato correttamente.`
       );
 
       setNuovoDipendente({
@@ -301,10 +307,13 @@ async function caricaImports() {
 
       await caricaDipendenti();
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Errore creazione dipendente:",
+        error
+      );
 
       setErrore(
-        error.message ||
+        error?.message ||
           "Errore durante la creazione del dipendente."
       );
     } finally {
@@ -312,14 +321,11 @@ async function caricaImports() {
     }
   }
 
-  // ==============================
-  // MODIFICA GRADO
-  // ==============================
+  // =========================================================
+  // CAMBIA GRADO
+  // =========================================================
 
-  async function cambiaGrado(
-    dipendente,
-    nuovoGrado
-  ) {
+  async function cambiaGrado(dipendente, nuovoGrado) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
@@ -342,30 +348,31 @@ async function caricaImports() {
 
       await caricaDipendenti();
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Errore modifica grado:",
+        error
+      );
 
       setErrore(
-        "Errore durante la modifica del grado."
+        error?.message ||
+          "Errore durante la modifica del grado."
       );
     } finally {
       setSalvataggio(null);
     }
   }
 
-  // ==============================
-  // ATTIVA / DISATTIVA DIPENDENTE
-  // ==============================
+  // =========================================================
+  // ATTIVA / DISATTIVA
+  // =========================================================
 
-  async function cambiaStatoDipendente(
-    dipendente
-  ) {
+  async function cambiaStatoDipendente(dipendente) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
 
     try {
-      const nuovoStato =
-        !dipendente.attivo;
+      const nuovoStato = !dipendente.attivo;
 
       const { error } = await supabase
         .from("profiles")
@@ -386,23 +393,25 @@ async function caricaImports() {
 
       await caricaDipendenti();
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Errore modifica stato:",
+        error
+      );
 
       setErrore(
-        "Errore durante la modifica dello stato del dipendente."
+        error?.message ||
+          "Errore durante la modifica dello stato."
       );
     } finally {
       setSalvataggio(null);
     }
   }
 
-  // ==============================
-  // ELIMINA DIPENDENTE
-  // ==============================
+  // =========================================================
+  // ELIMINA DEFINITIVAMENTE
+  // =========================================================
 
-  async function eliminaDipendente(
-    dipendente
-  ) {
+  async function eliminaDipendente(dipendente) {
     const nomeCompleto =
       `${dipendente.nome || ""} ${
         dipendente.cognome || ""
@@ -447,13 +456,18 @@ async function caricaImports() {
         }
       );
 
-      const risultato =
-        await response.json();
+      let risultato = {};
+
+      try {
+        risultato = await response.json();
+      } catch {
+        risultato = {};
+      }
 
       if (!response.ok) {
         throw new Error(
-          risultato.error ||
-            "Errore durante l'eliminazione del dipendente."
+          risultato?.error ||
+            `Errore eliminazione dipendente (${response.status}).`
         );
       }
 
@@ -473,7 +487,7 @@ async function caricaImports() {
       );
 
       setErrore(
-        error.message ||
+        error?.message ||
           "Errore durante l'eliminazione del dipendente."
       );
     } finally {
@@ -481,9 +495,9 @@ async function caricaImports() {
     }
   }
 
-  // ==============================
+  // =========================================================
   // ANNULLA FATTURA
-  // ==============================
+  // =========================================================
 
   async function annullaFattura(fattura) {
     setErrore("");
@@ -511,23 +525,25 @@ async function caricaImports() {
         caricaDipendenti(),
       ]);
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Errore annullamento fattura:",
+        error
+      );
 
       setErrore(
-        "Errore durante l'annullamento della fattura."
+        error?.message ||
+          "Errore durante l'annullamento della fattura."
       );
     } finally {
       setAzioneFattura(null);
     }
   }
 
-  // ==============================
+  // =========================================================
   // RIPRISTINA FATTURA
-  // ==============================
+  // =========================================================
 
-  async function ripristinaFattura(
-    fattura
-  ) {
+  async function ripristinaFattura(fattura) {
     setErrore("");
     setSuccesso("");
     setAzioneFattura(fattura.id);
@@ -553,19 +569,23 @@ async function caricaImports() {
         caricaDipendenti(),
       ]);
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Errore ripristino fattura:",
+        error
+      );
 
       setErrore(
-        "Errore durante il ripristino della fattura."
+        error?.message ||
+          "Errore durante il ripristino della fattura."
       );
     } finally {
       setAzioneFattura(null);
     }
   }
 
-  // ==============================
+  // =========================================================
   // FORMATTAZIONE
-  // ==============================
+  // =========================================================
 
   function formattaSoldi(numero) {
     return new Intl.NumberFormat("it-IT", {
@@ -576,61 +596,85 @@ async function caricaImports() {
   }
 
   function formattaData(data) {
-    if (!data) return "";
+    if (!data) {
+      return "";
+    }
 
-    return new Intl.DateTimeFormat(
-      "it-IT",
-      {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    ).format(new Date(data));
+    return new Intl.DateTimeFormat("it-IT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(data));
   }
 
-  // ==============================
+  function datiStoriciFattura(fattura) {
+    const nomeProfilo =
+      `${fattura.profiles?.nome || ""} ${
+        fattura.profiles?.cognome || ""
+      }`.trim();
+
+    const nomeStorico =
+      `${fattura.employee_nome || ""} ${
+        fattura.employee_cognome || ""
+      }`.trim();
+
+    return {
+      nome:
+        nomeProfilo ||
+        nomeStorico ||
+        fattura.profiles?.username ||
+        fattura.employee_username ||
+        "Dipendente eliminato",
+
+      username:
+        fattura.profiles?.username ||
+        fattura.employee_username ||
+        "",
+
+      grado:
+        fattura.profiles?.grado ||
+        fattura.employee_grado ||
+        "Grado non disponibile",
+
+      eliminato: !fattura.employee_id,
+    };
+  }
+
+  // =========================================================
   // TOTALI
-  // ==============================
+  // =========================================================
 
   const fattureValide = fatture.filter(
     (fattura) => !fattura.annullata
   );
 
-  const fatturatoTotale =
-    fattureValide.reduce(
-      (totale, fattura) =>
-        totale +
-        Number(fattura.totale || 0),
-      0
-    );
+  const fatturatoTotale = fattureValide.reduce(
+    (totale, fattura) =>
+      totale + Number(fattura.totale || 0),
+    0
+  );
 
-  const stipendiTotali =
-    dipendenti.reduce(
-      (totale, dipendente) =>
-        totale +
-        Number(
-          dipendente.stipendio || 0
-        ),
-      0
-    );
+  const stipendiTotali = dipendenti.reduce(
+    (totale, dipendente) =>
+      totale + Number(dipendente.stipendio || 0),
+    0
+  );
 
   const importValidi = imports.filter(
     (ordine) => !ordine.annullato
   );
 
-  const totaleImport =
-    importValidi.reduce(
-      (totale, ordine) =>
-        totale +
-        Number(ordine.totale || 0),
-      0
-    );
+  const totaleImport = importValidi.reduce(
+    (totale, ordine) =>
+      totale + Number(ordine.totale || 0),
+    0
+  );
 
-  // ==============================
+  // =========================================================
   // LOADING
-  // ==============================
+  // =========================================================
 
   if (loading) {
     return (
@@ -651,6 +695,10 @@ async function caricaImports() {
     );
   }
 
+  // =========================================================
+  // PAGINA
+  // =========================================================
+
   return (
     <main
       style={{
@@ -669,8 +717,7 @@ async function caricaImports() {
         <div
           style={{
             display: "flex",
-            justifyContent:
-              "space-between",
+            justifyContent: "space-between",
             alignItems: "center",
             gap: "20px",
             flexWrap: "wrap",
@@ -695,7 +742,7 @@ async function caricaImports() {
             </h1>
 
             <p className="subtitle">
-              Gestione completa dell'Armeria
+              Gestione completa dell&apos;Armeria
             </p>
           </div>
 
@@ -733,7 +780,7 @@ async function caricaImports() {
           </div>
         )}
 
-        {/* TOTALI */}
+        {/* STATISTICHE */}
 
         <div
           style={{
@@ -746,9 +793,7 @@ async function caricaImports() {
         >
           <StatCard
             titolo="Fatturato totale"
-            valore={formattaSoldi(
-              fatturatoTotale
-            )}
+            valore={formattaSoldi(fatturatoTotale)}
           />
 
           <StatCard
@@ -758,9 +803,7 @@ async function caricaImports() {
 
           <StatCard
             titolo="Stipendi maturati"
-            valore={formattaSoldi(
-              stipendiTotali
-            )}
+            valore={formattaSoldi(stipendiTotali)}
           />
 
           <StatCard
@@ -775,13 +818,11 @@ async function caricaImports() {
 
           <StatCard
             titolo="Totale Import"
-            valore={formattaSoldi(
-              totaleImport
-            )}
+            valore={formattaSoldi(totaleImport)}
           />
         </div>
 
-        {/* GESTIONE IMPORT */}
+        {/* IMPORT */}
 
         <div
           className="card"
@@ -794,8 +835,7 @@ async function caricaImports() {
           <div
             style={{
               display: "flex",
-              justifyContent:
-                "space-between",
+              justifyContent: "space-between",
               alignItems: "center",
               gap: "20px",
               flexWrap: "wrap",
@@ -814,15 +854,7 @@ async function caricaImports() {
                 ORDINI MATERIALI
               </div>
 
-              <h2
-                style={{
-                  fontSize: "22px",
-                  textTransform:
-                    "uppercase",
-                }}
-              >
-                Gestione Import
-              </h2>
+              <h2>Gestione Import</h2>
 
               <p
                 style={{
@@ -831,18 +863,15 @@ async function caricaImports() {
                   marginTop: "7px",
                 }}
               >
-                Visualizza, controlla e
-                gestisci gli ordini dei
-                materiali dell'Armeria.
+                Visualizza, controlla e gestisci gli
+                ordini dei materiali dell&apos;Armeria.
               </p>
             </div>
 
             <button
               className="btn btn-primary"
               onClick={() =>
-                router.push(
-                  "/storico-import"
-                )
+                router.push("/storico-import")
               }
             >
               Storico Import
@@ -850,7 +879,7 @@ async function caricaImports() {
           </div>
         </div>
 
-        {/* GESTIONE CATALOGO */}
+        {/* CATALOGO */}
 
         <div
           className="card"
@@ -863,8 +892,7 @@ async function caricaImports() {
           <div
             style={{
               display: "flex",
-              justifyContent:
-                "space-between",
+              justifyContent: "space-between",
               alignItems: "center",
               gap: "20px",
               flexWrap: "wrap",
@@ -883,15 +911,7 @@ async function caricaImports() {
                 CATALOGO ARMERIA
               </div>
 
-              <h2
-                style={{
-                  fontSize: "22px",
-                  textTransform:
-                    "uppercase",
-                }}
-              >
-                Gestione Prodotti
-              </h2>
+              <h2>Gestione Prodotti</h2>
 
               <p
                 style={{
@@ -900,18 +920,15 @@ async function caricaImports() {
                   marginTop: "7px",
                 }}
               >
-                Aggiungi prodotti, modifica
-                prezzi e gestisci gli
-                articoli disponibili.
+                Aggiungi prodotti, modifica prezzi e
+                gestisci gli articoli disponibili.
               </p>
             </div>
 
             <button
               className="btn btn-primary"
               onClick={() =>
-                router.push(
-                  "/admin/catalogo"
-                )
+                router.push("/admin/catalogo")
               }
             >
               Gestisci Catalogo
@@ -919,7 +936,7 @@ async function caricaImports() {
           </div>
         </div>
 
-        {/* CREA DIPENDENTE */}
+        {/* ASSUMI */}
 
         <div
           className="card"
@@ -929,27 +946,25 @@ async function caricaImports() {
         >
           <div
             style={{
+              color: "#c42a2a",
+              fontSize: "11px",
+              fontWeight: "bold",
+              letterSpacing: "3px",
+              marginBottom: "7px",
+            }}
+          >
+            PERSONALE
+          </div>
+
+          <h2
+            style={{
               marginBottom: "22px",
             }}
           >
-            <div
-              style={{
-                color: "#c42a2a",
-                fontSize: "11px",
-                fontWeight: "bold",
-                letterSpacing: "3px",
-                marginBottom: "7px",
-              }}
-            >
-              PERSONALE
-            </div>
+            Assumi dipendente
+          </h2>
 
-            <h2>Assumi dipendente</h2>
-          </div>
-
-          <form
-            onSubmit={creaDipendente}
-          >
+          <form onSubmit={creaDipendente}>
             <div
               style={{
                 display: "grid",
@@ -958,106 +973,71 @@ async function caricaImports() {
                 gap: "15px",
               }}
             >
-              <div className="form-group">
-                <label>Nome</label>
+              <Campo
+                label="Nome"
+                value={nuovoDipendente.nome}
+                onChange={(value) =>
+                  modificaNuovoDipendente(
+                    "nome",
+                    value
+                  )
+                }
+              />
 
-                <input
-                  type="text"
-                  value={
-                    nuovoDipendente.nome
-                  }
-                  onChange={(e) =>
-                    modificaNuovoDipendente(
-                      "nome",
-                      e.target.value
-                    )
-                  }
-                  required
-                />
-              </div>
+              <Campo
+                label="Cognome"
+                value={nuovoDipendente.cognome}
+                onChange={(value) =>
+                  modificaNuovoDipendente(
+                    "cognome",
+                    value
+                  )
+                }
+              />
 
-              <div className="form-group">
-                <label>Cognome</label>
+              <Campo
+                label="Username"
+                value={nuovoDipendente.username}
+                onChange={(value) =>
+                  modificaNuovoDipendente(
+                    "username",
+                    value
+                  )
+                }
+              />
 
-                <input
-                  type="text"
-                  value={
-                    nuovoDipendente.cognome
-                  }
-                  onChange={(e) =>
-                    modificaNuovoDipendente(
-                      "cognome",
-                      e.target.value
-                    )
-                  }
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Username</label>
-
-                <input
-                  type="text"
-                  value={
-                    nuovoDipendente.username
-                  }
-                  onChange={(e) =>
-                    modificaNuovoDipendente(
-                      "username",
-                      e.target.value
-                    )
-                  }
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Password</label>
-
-                <input
-                  type="password"
-                  value={
-                    nuovoDipendente.password
-                  }
-                  onChange={(e) =>
-                    modificaNuovoDipendente(
-                      "password",
-                      e.target.value
-                    )
-                  }
-                  minLength={6}
-                  required
-                />
-              </div>
+              <Campo
+                label="Password"
+                type="password"
+                minLength={6}
+                value={nuovoDipendente.password}
+                onChange={(value) =>
+                  modificaNuovoDipendente(
+                    "password",
+                    value
+                  )
+                }
+              />
 
               <div className="form-group">
                 <label>Grado</label>
 
                 <select
-                  value={
-                    nuovoDipendente.grado
-                  }
-                  onChange={(e) =>
+                  value={nuovoDipendente.grado}
+                  onChange={(event) =>
                     modificaNuovoDipendente(
                       "grado",
-                      e.target.value
+                      event.target.value
                     )
                   }
                 >
-                  {Object.entries(
-                    GRADI
-                  ).map(
-                    ([
-                      grado,
-                      percentuale,
-                    ]) => (
+                  {Object.entries(GRADI).map(
+                    ([grado, percentuale]) => (
                       <option
                         key={grado}
                         value={grado}
                       >
-                        {grado} —{" "}
-                        {percentuale}%
+                        {grado} — {percentuale}%
                       </option>
                     )
                   )}
@@ -1102,470 +1082,481 @@ async function caricaImports() {
               gap: "15px",
             }}
           >
-            {dipendenti.map(
-              (dipendente) => (
+            {dipendenti.map((dipendente) => (
+              <div
+                className="card"
+                key={dipendente.id}
+                style={{
+                  opacity: dipendente.attivo
+                    ? 1
+                    : 0.55,
+                }}
+              >
                 <div
-                  className="card"
-                  key={dipendente.id}
                   style={{
-                    opacity:
-                      dipendente.attivo
-                        ? 1
-                        : 0.55,
+                    display: "flex",
+                    justifyContent:
+                      "space-between",
+                    gap: "15px",
+                    marginBottom: "15px",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent:
-                        "space-between",
-                      gap: "15px",
-                      marginBottom:
-                        "15px",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontSize:
-                            "18px",
-                          fontWeight:
-                            "900",
-                        }}
-                      >
-                        {dipendente.nome}{" "}
-                        {
-                          dipendente.cognome
-                        }
-                      </div>
-
-                      <div
-                        style={{
-                          color: "#777",
-                          fontSize:
-                            "12px",
-                          marginTop:
-                            "4px",
-                        }}
-                      >
-                        @
-                        {dipendente.username ||
-                          "—"}
-                      </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: "900",
+                      }}
+                    >
+                      {dipendente.nome}{" "}
+                      {dipendente.cognome}
                     </div>
 
                     <div
                       style={{
-                        color:
-                          dipendente.attivo
-                            ? "#c42a2a"
-                            : "#777",
-                        fontSize: "11px",
-                        fontWeight:
-                          "900",
+                        color: "#777",
+                        fontSize: "12px",
+                        marginTop: "4px",
                       }}
                     >
-                      {dipendente.attivo
-                        ? "ATTIVO"
-                        : "DISATTIVATO"}
+                      @{dipendente.username || "—"}
                     </div>
                   </div>
 
                   <div
                     style={{
-                      color: "#aaa",
-                      fontSize: "13px",
-                      lineHeight: "1.8",
-                      marginBottom:
-                        "15px",
+                      color: dipendente.attivo
+                        ? "#c42a2a"
+                        : "#777",
+                      fontSize: "11px",
+                      fontWeight: "900",
                     }}
                   >
-                    <div>
-                      Grado:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
-                        {
-                          dipendente.grado
-                        }
-                      </strong>
-                    </div>
+                    {dipendente.attivo
+                      ? "ATTIVO"
+                      : "DISATTIVATO"}
+                  </div>
+                </div>
 
-                    <div>
-                      Percentuale:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
-                        {
-                          dipendente.percentuale_stipendio
-                        }
-                        %
-                      </strong>
-                    </div>
-
-                    <div>
-                      Fatture:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
-                        {
-                          dipendente.numero_fatture
-                        }
-                      </strong>
-                    </div>
-
-                    <div>
-                      Fatturato:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
-                        {formattaSoldi(
-                          dipendente.fatturato
-                        )}
-                      </strong>
-                    </div>
-
-                    <div>
-                      Stipendio:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
-                        {formattaSoldi(
-                          dipendente.stipendio
-                        )}
-                      </strong>
-                    </div>
+                <div
+                  style={{
+                    color: "#aaa",
+                    fontSize: "13px",
+                    lineHeight: "1.8",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <div>
+                    Grado:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {dipendente.grado}
+                    </strong>
                   </div>
 
-                  {dipendente.ruolo !==
-                  "admin" ? (
-                    <>
-                      <div className="form-group">
-                        <label>
-                          Grado
-                        </label>
+                  <div>
+                    Percentuale:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {
+                        dipendente.percentuale_stipendio
+                      }
+                      %
+                    </strong>
+                  </div>
 
-                        <select
-                          value={
-                            dipendente.grado
-                          }
-                          disabled={
-                            salvataggio ===
-                              dipendente.id ||
-                            eliminazione ===
-                              dipendente.id
-                          }
-                          onChange={(e) =>
-                            cambiaGrado(
-                              dipendente,
-                              e.target
-                                .value
-                            )
-                          }
+                  <div>
+                    Fatture:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {dipendente.numero_fatture}
+                    </strong>
+                  </div>
+
+                  <div>
+                    Fatturato:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {formattaSoldi(
+                        dipendente.fatturato
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    Stipendio:{" "}
+                    <strong
+                      style={{
+                        color: "#fff",
+                      }}
+                    >
+                      {formattaSoldi(
+                        dipendente.stipendio
+                      )}
+                    </strong>
+                  </div>
+                </div>
+
+                {dipendente.ruolo !== "admin" ? (
+                  <>
+                    <div className="form-group">
+                      <label>Grado</label>
+
+                      <select
+                        value={dipendente.grado}
+                        disabled={
+                          salvataggio ===
+                            dipendente.id ||
+                          eliminazione ===
+                            dipendente.id
+                        }
+                        onChange={(event) =>
+                          cambiaGrado(
+                            dipendente,
+                            event.target.value
+                          )
+                        }
+                      >
+                        {Object.entries(GRADI).map(
+                          ([grado, percentuale]) => (
+                            <option
+                              key={grado}
+                              value={grado}
+                            >
+                              {grado} —{" "}
+                              {percentuale}%
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        className="btn btn-dark"
+                        disabled={
+                          salvataggio ===
+                            dipendente.id ||
+                          eliminazione ===
+                            dipendente.id
+                        }
+                        onClick={() =>
+                          cambiaStatoDipendente(
+                            dipendente
+                          )
+                        }
+                      >
+                        {dipendente.attivo
+                          ? "Disattiva Dipendente"
+                          : "Riattiva Dipendente"}
+                      </button>
+
+                      <button
+                        className="btn btn-primary"
+                        disabled={
+                          eliminazione ===
+                            dipendente.id ||
+                          salvataggio ===
+                            dipendente.id
+                        }
+                        onClick={() =>
+                          eliminaDipendente(
+                            dipendente
+                          )
+                        }
+                        style={{
+                          background: "#7a1010",
+                          borderColor: "#a51d1d",
+                        }}
+                      >
+                        {eliminazione ===
+                        dipendente.id
+                          ? "Eliminazione..."
+                          : "Elimina definitivamente"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      color: "#c42a2a",
+                      fontSize: "11px",
+                      fontWeight: "900",
+                      letterSpacing: "2px",
+                    }}
+                  >
+                    ACCOUNT AMMINISTRATORE
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ULTIME FATTURE */}
+
+        <div>
+          <h2
+            style={{
+              marginBottom: "15px",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+            }}
+          >
+            Ultime Fatture
+          </h2>
+
+          {fatture.length === 0 ? (
+            <div className="card">
+              <p
+                style={{
+                  color: "#777",
+                }}
+              >
+                Nessuna fattura registrata.
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              {fatture.map((fattura) => {
+                const dati =
+                  datiStoriciFattura(fattura);
+
+                return (
+                  <div
+                    className="card"
+                    key={fattura.id}
+                    style={{
+                      opacity: fattura.annullata
+                        ? 0.55
+                        : 1,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent:
+                          "space-between",
+                        alignItems: "center",
+                        gap: "20px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            fontWeight: "900",
+                            fontSize: "16px",
+                          }}
                         >
-                          {Object.entries(
-                            GRADI
-                          ).map(
-                            ([
-                              grado,
-                              percentuale,
-                            ]) => (
-                              <option
-                                key={
-                                  grado
-                                }
-                                value={
-                                  grado
-                                }
+                          {dati.nome}
+                        </div>
+
+                        {dati.username && (
+                          <div
+                            style={{
+                              color: "#777",
+                              fontSize: "11px",
+                              marginTop: "3px",
+                            }}
+                          >
+                            @{dati.username}
+                          </div>
+                        )}
+
+                        <div
+                          style={{
+                            color: "#777",
+                            fontSize: "12px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          {dati.grado}
+
+                          {dati.eliminato && (
+                            <>
+                              {" • "}
+
+                              <span
+                                style={{
+                                  color: "#c42a2a",
+                                  fontWeight: "900",
+                                }}
                               >
-                                {grado} —{" "}
-                                {
-                                  percentuale
-                                }
-                                %
-                              </option>
-                            )
+                                ACCOUNT ELIMINATO
+                              </span>
+                            </>
                           )}
-                        </select>
+
+                          {" • "}
+
+                          {formattaData(
+                            fattura.created_at
+                          )}
+                        </div>
+
+                        {fattura.annullata && (
+                          <div
+                            style={{
+                              color: "#c42a2a",
+                              fontWeight: "900",
+                              fontSize: "11px",
+                              marginTop: "7px",
+                            }}
+                          >
+                            FATTURA ANNULLATA
+                          </div>
+                        )}
                       </div>
 
                       <div
                         style={{
                           display: "flex",
-                          gap: "10px",
+                          alignItems: "center",
+                          gap: "15px",
                           flexWrap: "wrap",
                         }}
                       >
-                        <button
-                          className="btn btn-dark"
-                          disabled={
-                            salvataggio ===
-                              dipendente.id ||
-                            eliminazione ===
-                              dipendente.id
-                          }
-                          onClick={() =>
-                            cambiaStatoDipendente(
-                              dipendente
-                            )
-                          }
-                        >
-                          {dipendente.attivo
-                            ? "Disattiva Dipendente"
-                            : "Riattiva Dipendente"}
-                        </button>
-
-                        <button
-                          className="btn btn-primary"
-                          disabled={
-                            eliminazione ===
-                              dipendente.id ||
-                            salvataggio ===
-                              dipendente.id
-                          }
-                          onClick={() =>
-                            eliminaDipendente(
-                              dipendente
-                            )
-                          }
+                        <div
                           style={{
-                            background:
-                              "#7a1010",
-                            borderColor:
-                              "#a51d1d",
+                            fontSize: "20px",
+                            fontWeight: "900",
                           }}
                         >
-                          {eliminazione ===
-                          dipendente.id
-                            ? "Eliminazione..."
-                            : "Elimina definitivamente"}
-                        </button>
+                          {formattaSoldi(
+                            fattura.totale
+                          )}
+                        </div>
+
+                        {fattura.annullata ? (
+                          <button
+                            className="btn btn-dark"
+                            disabled={
+                              azioneFattura ===
+                              fattura.id
+                            }
+                            onClick={() =>
+                              ripristinaFattura(
+                                fattura
+                              )
+                            }
+                          >
+                            {azioneFattura ===
+                            fattura.id
+                              ? "Attendi..."
+                              : "Ripristina"}
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-dark"
+                            disabled={
+                              azioneFattura ===
+                              fattura.id
+                            }
+                            onClick={() =>
+                              annullaFattura(
+                                fattura
+                              )
+                            }
+                          >
+                            {azioneFattura ===
+                            fattura.id
+                              ? "Attendi..."
+                              : "Annulla"}
+                          </button>
+                        )}
                       </div>
-                    </>
-                  ) : (
-                    <div
-                      style={{
-                        color:
-                          "#c42a2a",
-                        fontSize:
-                          "11px",
-                        fontWeight:
-                          "900",
-                        letterSpacing:
-                          "2px",
-                      }}
-                    >
-                      ACCOUNT
-                      AMMINISTRATORE
                     </div>
-                  )}
-                </div>
-              )
-            )}
-          </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+      </div>
+    </main>
+  );
+}
 
-      {/* FATTURE */}
+// =========================================================
+// CAMPO FORM
+// =========================================================
 
-<div>
-  <h2
-    style={{
-      marginBottom: "15px",
-      textTransform: "uppercase",
-      letterSpacing: "2px",
-    }}
-  >
-    Ultime Fatture
-  </h2>
+function Campo({
+  label,
+  value,
+  onChange,
+  type = "text",
+  minLength,
+}) {
+  return (
+    <div className="form-group">
+      <label>{label}</label>
 
-  {fatture.length === 0 ? (
+      <input
+        type={type}
+        value={value}
+        minLength={minLength}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        required
+      />
+    </div>
+  );
+}
+
+// =========================================================
+// CARD STATISTICA
+// =========================================================
+
+function StatCard({ titolo, valore }) {
+  return (
     <div className="card">
-      <p
+      <div
         style={{
           color: "#777",
+          fontSize: "11px",
+          textTransform: "uppercase",
+          letterSpacing: "1.5px",
+          marginBottom: "10px",
         }}
       >
-        Nessuna fattura registrata.
-      </p>
+        {titolo}
+      </div>
+
+      <div
+        style={{
+          fontSize: "28px",
+          fontWeight: "900",
+        }}
+      >
+        {valore}
+      </div>
     </div>
-  ) : (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-      }}
-    >
-      {fatture.map((fattura) => {
-        const nomeProfilo =
-          `${
-            fattura.profiles?.nome || ""
-          } ${
-            fattura.profiles?.cognome || ""
-          }`.trim();
-
-        const nomeStorico =
-          `${
-            fattura.employee_nome || ""
-          } ${
-            fattura.employee_cognome || ""
-          }`.trim();
-
-        const nome =
-          nomeProfilo ||
-          nomeStorico ||
-          fattura.profiles?.username ||
-          fattura.employee_username ||
-          "Dipendente eliminato";
-
-        const grado =
-          fattura.profiles?.grado ||
-          fattura.employee_grado ||
-          "Grado non disponibile";
-
-        const accountEliminato =
-          !fattura.employee_id;
-
-        return (
-          <div
-            className="card"
-            key={fattura.id}
-            style={{
-              opacity: fattura.annullata
-                ? 0.55
-                : 1,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems: "center",
-                gap: "20px",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontWeight: "900",
-                    fontSize: "16px",
-                  }}
-                >
-                  {nome}
-                </div>
-
-                <div
-                  style={{
-                    color: "#777",
-                    fontSize: "12px",
-                    marginTop: "4px",
-                  }}
-                >
-                  {grado}
-
-                  {accountEliminato && (
-                    <>
-                      {" • "}
-
-                      <span
-                        style={{
-                          color: "#c42a2a",
-                          fontWeight: "900",
-                        }}
-                      >
-                        ACCOUNT ELIMINATO
-                      </span>
-                    </>
-                  )}
-
-                  {" • "}
-
-                  {formattaData(
-                    fattura.created_at
-                  )}
-                </div>
-
-                {fattura.annullata && (
-                  <div
-                    style={{
-                      color: "#c42a2a",
-                      fontWeight: "900",
-                      fontSize: "11px",
-                      marginTop: "7px",
-                    }}
-                  >
-                    FATTURA ANNULLATA
-                  </div>
-                )}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "15px",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: "900",
-                  }}
-                >
-                  {formattaSoldi(
-                    fattura.totale
-                  )}
-                </div>
-
-                {fattura.annullata ? (
-                  <button
-                    className="btn btn-dark"
-                    disabled={
-                      azioneFattura ===
-                      fattura.id
-                    }
-                    onClick={() =>
-                      ripristinaFattura(
-                        fattura
-                      )
-                    }
-                  >
-                    Ripristina
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn-dark"
-                    disabled={
-                      azioneFattura ===
-                      fattura.id
-                    }
-                    onClick={() =>
-                      annullaFattura(
-                        fattura
-                      )
-                    }
-                  >
-                    Annulla
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  )}
-</div>
+  );
+}
