@@ -39,9 +39,12 @@ export default function ImportPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [salvataggio, setSalvataggio] = useState(false);
+  const [salvataggio, setSalvataggio] =
+    useState(false);
 
   const [utente, setUtente] = useState(null);
+  const [profilo, setProfilo] = useState(null);
+
   const [quantita, setQuantita] = useState({});
 
   const [errore, setErrore] = useState("");
@@ -62,35 +65,66 @@ export default function ImportPage() {
         return;
       }
 
-      const { data: profilo, error } =
-        await supabase
-          .from("profiles")
-          .select("attivo")
-          .eq("id", user.id)
-          .single();
+      // ==============================
+      // CARICA PROFILO DIPENDENTE
+      // ==============================
 
-      if (error || !profilo?.attivo) {
+      const {
+        data: profiloData,
+        error: profiloError,
+      } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          nome,
+          cognome,
+          username,
+          grado,
+          attivo
+        `)
+        .eq("id", user.id)
+        .single();
+
+      if (
+        profiloError ||
+        !profiloData
+      ) {
+        throw new Error(
+          "Impossibile caricare il profilo del dipendente."
+        );
+      }
+
+      if (!profiloData.attivo) {
         await supabase.auth.signOut();
         router.replace("/login");
         return;
       }
 
       setUtente(user);
+      setProfilo(profiloData);
     } catch (error) {
       console.error(error);
 
       setErrore(
-        "Errore durante il caricamento."
+        error.message ||
+          "Errore durante il caricamento."
       );
     } finally {
       setLoading(false);
     }
   }
 
+  // ==============================
+  // QUANTITÀ
+  // ==============================
+
   function cambiaQuantita(nome, valore) {
     let numero = parseInt(valore, 10);
 
-    if (isNaN(numero) || numero < 0) {
+    if (
+      isNaN(numero) ||
+      numero < 0
+    ) {
       numero = 0;
     }
 
@@ -99,6 +133,10 @@ export default function ImportPage() {
       [nome]: numero,
     }));
   }
+
+  // ==============================
+  // MATERIALI SELEZIONATI
+  // ==============================
 
   function materialiSelezionati() {
     return MATERIALI
@@ -116,12 +154,18 @@ export default function ImportPage() {
 
         return {
           ...materiale,
+
           quantita: qta,
+
           subtotale:
             materiale.prezzo * qta,
         };
       });
   }
+
+  // ==============================
+  // TOTALE
+  // ==============================
 
   function calcolaTotale() {
     return materialiSelezionati().reduce(
@@ -131,6 +175,10 @@ export default function ImportPage() {
     );
   }
 
+  // ==============================
+  // FORMATTA SOLDI
+  // ==============================
+
   function formattaSoldi(numero) {
     return new Intl.NumberFormat("it-IT", {
       style: "currency",
@@ -138,6 +186,10 @@ export default function ImportPage() {
       maximumFractionDigits: 0,
     }).format(Number(numero || 0));
   }
+
+  // ==============================
+  // REGISTRA IMPORT
+  // ==============================
 
   async function registraImport() {
     setErrore("");
@@ -150,6 +202,7 @@ export default function ImportPage() {
       setErrore(
         "Inserisci almeno una quantità."
       );
+
       return;
     }
 
@@ -159,20 +212,33 @@ export default function ImportPage() {
       setErrore(
         "Il totale dell'import non è valido."
       );
+
       return;
     }
 
-    if (!utente) {
+    if (!utente || !profilo) {
       setErrore(
         "Sessione non valida."
       );
+
       return;
     }
 
     setSalvataggio(true);
 
     try {
+      // ==============================
       // CREA IMPORT
+      // ==============================
+      //
+      // Salviamo anche una copia dei
+      // dati del dipendente.
+      //
+      // Se il dipendente verrà eliminato
+      // in futuro, lo storico Import
+      // conserverà comunque il suo nome,
+      // username e grado.
+      // ==============================
 
       const {
         data: nuovoImport,
@@ -181,6 +247,19 @@ export default function ImportPage() {
         .from("imports")
         .insert({
           employee_id: utente.id,
+
+          employee_nome:
+            profilo.nome || "",
+
+          employee_cognome:
+            profilo.cognome || "",
+
+          employee_username:
+            profilo.username || "",
+
+          employee_grado:
+            profilo.grado || "Dipendente",
+
           totale: totale,
         })
         .select()
@@ -190,16 +269,24 @@ export default function ImportPage() {
         throw importError;
       }
 
+      // ==============================
       // CREA MATERIALI DELL'IMPORT
+      // ==============================
 
       const righe = selezionati.map(
         (materiale) => ({
-          import_id: nuovoImport.id,
-          materiale: materiale.nome,
+          import_id:
+            nuovoImport.id,
+
+          materiale:
+            materiale.nome,
+
           prezzo_unitario:
             materiale.prezzo,
+
           quantita:
             materiale.quantita,
+
           subtotale:
             materiale.subtotale,
         })
@@ -213,10 +300,14 @@ export default function ImportPage() {
       if (righeError) {
         // Evitiamo di lasciare
         // un import incompleto.
+
         await supabase
           .from("imports")
           .delete()
-          .eq("id", nuovoImport.id);
+          .eq(
+            "id",
+            nuovoImport.id
+          );
 
         throw righeError;
       }
@@ -235,12 +326,17 @@ export default function ImportPage() {
       console.error(error);
 
       setErrore(
-        "Errore durante la registrazione dell'import."
+        error.message ||
+          "Errore durante la registrazione dell'import."
       );
     } finally {
       setSalvataggio(false);
     }
   }
+
+  // ==============================
+  // LOADING
+  // ==============================
 
   if (loading) {
     return (
@@ -272,7 +368,8 @@ export default function ImportPage() {
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent:
+              "space-between",
             alignItems: "center",
             gap: "20px",
             flexWrap: "wrap",
@@ -305,7 +402,9 @@ export default function ImportPage() {
           <button
             className="btn btn-dark"
             onClick={() =>
-              router.push("/dashboard")
+              router.push(
+                "/dashboard"
+              )
             }
           >
             ← Dashboard
@@ -317,124 +416,159 @@ export default function ImportPage() {
         <div
           style={{
             display: "grid",
+
             gridTemplateColumns:
               "repeat(auto-fit, minmax(250px, 1fr))",
+
             gap: "15px",
           }}
         >
-          {MATERIALI.map((materiale) => {
-            const qta = Number(
-              quantita[materiale.nome] || 0
-            );
+          {MATERIALI.map(
+            (materiale) => {
+              const qta = Number(
+                quantita[
+                  materiale.nome
+                ] || 0
+              );
 
-            const subtotale =
-              materiale.prezzo * qta;
+              const subtotale =
+                materiale.prezzo *
+                qta;
 
-            return (
-              <div
-                className="card"
-                key={materiale.nome}
-                style={{
-                  padding: "20px",
-                }}
-              >
+              return (
                 <div
+                  className="card"
+                  key={materiale.nome}
                   style={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    alignItems:
-                      "flex-start",
-                    gap: "15px",
-                    marginBottom:
-                      "20px",
+                    padding: "20px",
                   }}
                 >
-                  <div>
-                    <h3
-                      style={{
-                        fontSize: "17px",
-                      }}
-                    >
-                      {materiale.nome}
-                    </h3>
+                  <div
+                    style={{
+                      display: "flex",
+
+                      justifyContent:
+                        "space-between",
+
+                      alignItems:
+                        "flex-start",
+
+                      gap: "15px",
+
+                      marginBottom:
+                        "20px",
+                    }}
+                  >
+                    <div>
+                      <h3
+                        style={{
+                          fontSize:
+                            "17px",
+                        }}
+                      >
+                        {materiale.nome}
+                      </h3>
+
+                      <div
+                        style={{
+                          color:
+                            "#777",
+
+                          fontSize:
+                            "12px",
+
+                          marginTop:
+                            "5px",
+                        }}
+                      >
+                        Prezzo unitario
+                      </div>
+                    </div>
 
                     <div
                       style={{
-                        color: "#777",
-                        fontSize: "12px",
-                        marginTop: "5px",
-                      }}
-                    >
-                      Prezzo unitario
-                    </div>
-                  </div>
+                        color:
+                          "#c42a2a",
 
-                  <div
-                    style={{
-                      color: "#c42a2a",
-                      fontSize: "18px",
-                      fontWeight: "900",
-                    }}
-                  >
-                    {formattaSoldi(
-                      materiale.prezzo
-                    )}
-                  </div>
-                </div>
+                        fontSize:
+                          "18px",
 
-                <label>
-                  Quantità
-                </label>
-
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={qta}
-                  onChange={(e) =>
-                    cambiaQuantita(
-                      materiale.nome,
-                      e.target.value
-                    )
-                  }
-                  style={{
-                    marginTop: "8px",
-                  }}
-                />
-
-                {qta > 0 && (
-                  <div
-                    style={{
-                      marginTop: "15px",
-                      paddingTop: "15px",
-                      borderTop:
-                        "1px solid #222",
-                      display: "flex",
-                      justifyContent:
-                        "space-between",
-                      color: "#aaa",
-                      fontSize: "13px",
-                    }}
-                  >
-                    <span>
-                      Subtotale
-                    </span>
-
-                    <strong
-                      style={{
-                        color: "#fff",
+                        fontWeight:
+                          "900",
                       }}
                     >
                       {formattaSoldi(
-                        subtotale
+                        materiale.prezzo
                       )}
-                    </strong>
+                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+
+                  <label>
+                    Quantità
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={qta}
+                    onChange={(e) =>
+                      cambiaQuantita(
+                        materiale.nome,
+                        e.target.value
+                      )
+                    }
+                    style={{
+                      marginTop:
+                        "8px",
+                    }}
+                  />
+
+                  {qta > 0 && (
+                    <div
+                      style={{
+                        marginTop:
+                          "15px",
+
+                        paddingTop:
+                          "15px",
+
+                        borderTop:
+                          "1px solid #222",
+
+                        display:
+                          "flex",
+
+                        justifyContent:
+                          "space-between",
+
+                        color:
+                          "#aaa",
+
+                        fontSize:
+                          "13px",
+                      }}
+                    >
+                      <span>
+                        Subtotale
+                      </span>
+
+                      <strong
+                        style={{
+                          color:
+                            "#fff",
+                        }}
+                      >
+                        {formattaSoldi(
+                          subtotale
+                        )}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+          )}
         </div>
 
         {/* TOTALE */}
@@ -445,6 +579,7 @@ export default function ImportPage() {
             position: "sticky",
             bottom: "20px",
             marginTop: "30px",
+
             border:
               "1px solid rgba(139,30,30,.4)",
           }}
@@ -452,10 +587,14 @@ export default function ImportPage() {
           <div
             style={{
               display: "flex",
+
               justifyContent:
                 "space-between",
+
               alignItems: "center",
+
               gap: "25px",
+
               flexWrap: "wrap",
             }}
           >
@@ -463,9 +602,12 @@ export default function ImportPage() {
               <div
                 style={{
                   color: "#777",
+
                   fontSize: "11px",
+
                   textTransform:
                     "uppercase",
+
                   letterSpacing:
                     "2px",
                 }}
@@ -476,23 +618,32 @@ export default function ImportPage() {
               <div
                 style={{
                   fontSize: "34px",
-                  fontWeight: "900",
-                  marginTop: "5px",
+
+                  fontWeight:
+                    "900",
+
+                  marginTop:
+                    "5px",
                 }}
               >
-                {formattaSoldi(totale)}
+                {formattaSoldi(
+                  totale
+                )}
               </div>
             </div>
 
             <button
               className="btn btn-primary"
-              onClick={registraImport}
+              onClick={
+                registraImport
+              }
               disabled={
                 salvataggio ||
                 totale <= 0
               }
               style={{
-                minWidth: "220px",
+                minWidth:
+                  "220px",
               }}
             >
               {salvataggio
