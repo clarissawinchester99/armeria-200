@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import Sidebar from "../../components/Sidebar";
 
 const MATERIALI = [
   {
@@ -38,17 +39,26 @@ const MATERIALI = [
 export default function ImportPage() {
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
+
   const [salvataggio, setSalvataggio] =
     useState(false);
 
-  const [utente, setUtente] = useState(null);
-  const [profilo, setProfilo] = useState(null);
+  const [utente, setUtente] =
+    useState(null);
 
-  const [quantita, setQuantita] = useState({});
+  const [profilo, setProfilo] =
+    useState(null);
 
-  const [errore, setErrore] = useState("");
-  const [successo, setSuccesso] = useState("");
+  const [quantita, setQuantita] =
+    useState({});
+
+  const [errore, setErrore] =
+    useState("");
+
+  const [successo, setSuccesso] =
+    useState("");
 
   useEffect(() => {
     inizializza();
@@ -96,7 +106,9 @@ export default function ImportPage() {
 
       if (!profiloData.attivo) {
         await supabase.auth.signOut();
+
         router.replace("/login");
+
         return;
       }
 
@@ -118,8 +130,14 @@ export default function ImportPage() {
   // QUANTITÀ
   // ==============================
 
-  function cambiaQuantita(nome, valore) {
-    let numero = parseInt(valore, 10);
+  function cambiaQuantita(
+    nome,
+    valore
+  ) {
+    let numero = parseInt(
+      valore,
+      10
+    );
 
     if (
       isNaN(numero) ||
@@ -128,10 +146,12 @@ export default function ImportPage() {
       numero = 0;
     }
 
-    setQuantita((precedenti) => ({
-      ...precedenti,
-      [nome]: numero,
-    }));
+    setQuantita(
+      (precedenti) => ({
+        ...precedenti,
+        [nome]: numero,
+      })
+    );
   }
 
   // ==============================
@@ -143,13 +163,17 @@ export default function ImportPage() {
       .filter((materiale) => {
         return (
           Number(
-            quantita[materiale.nome] || 0
+            quantita[
+              materiale.nome
+            ] || 0
           ) > 0
         );
       })
       .map((materiale) => {
         const qta = Number(
-          quantita[materiale.nome] || 0
+          quantita[
+            materiale.nome
+          ] || 0
         );
 
         return {
@@ -158,7 +182,8 @@ export default function ImportPage() {
           quantita: qta,
 
           subtotale:
-            materiale.prezzo * qta,
+            materiale.prezzo *
+            qta,
         };
       });
   }
@@ -169,8 +194,12 @@ export default function ImportPage() {
 
   function calcolaTotale() {
     return materialiSelezionati().reduce(
-      (totale, materiale) =>
-        totale + materiale.subtotale,
+      (
+        totale,
+        materiale
+      ) =>
+        totale +
+        materiale.subtotale,
       0
     );
   }
@@ -180,11 +209,16 @@ export default function ImportPage() {
   // ==============================
 
   function formattaSoldi(numero) {
-    return new Intl.NumberFormat("it-IT", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(Number(numero || 0));
+    return new Intl.NumberFormat(
+      "it-IT",
+      {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }
+    ).format(
+      Number(numero || 0)
+    );
   }
 
   // ==============================
@@ -198,7 +232,9 @@ export default function ImportPage() {
     const selezionati =
       materialiSelezionati();
 
-    if (selezionati.length === 0) {
+    if (
+      selezionati.length === 0
+    ) {
       setErrore(
         "Inserisci almeno una quantità."
       );
@@ -206,7 +242,8 @@ export default function ImportPage() {
       return;
     }
 
-    const totale = calcolaTotale();
+    const totale =
+      calcolaTotale();
 
     if (totale <= 0) {
       setErrore(
@@ -216,7 +253,10 @@ export default function ImportPage() {
       return;
     }
 
-    if (!utente || !profilo) {
+    if (
+      !utente ||
+      !profilo
+    ) {
       setErrore(
         "Sessione non valida."
       );
@@ -230,15 +270,6 @@ export default function ImportPage() {
       // ==============================
       // CREA IMPORT
       // ==============================
-      //
-      // Salviamo anche una copia dei
-      // dati del dipendente.
-      //
-      // Se il dipendente verrà eliminato
-      // in futuro, lo storico Import
-      // conserverà comunque il suo nome,
-      // username e grado.
-      // ==============================
 
       const {
         data: nuovoImport,
@@ -246,7 +277,8 @@ export default function ImportPage() {
       } = await supabase
         .from("imports")
         .insert({
-          employee_id: utente.id,
+          employee_id:
+            utente.id,
 
           employee_nome:
             profilo.nome || "",
@@ -258,7 +290,8 @@ export default function ImportPage() {
             profilo.username || "",
 
           employee_grado:
-            profilo.grado || "Dipendente",
+            profilo.grado ||
+            "Dipendente",
 
           totale: totale,
         })
@@ -270,37 +303,36 @@ export default function ImportPage() {
       }
 
       // ==============================
-      // CREA MATERIALI DELL'IMPORT
+      // CREA MATERIALI IMPORT
       // ==============================
 
-      const righe = selezionati.map(
-        (materiale) => ({
-          import_id:
-            nuovoImport.id,
+      const righe =
+        selezionati.map(
+          (materiale) => ({
+            import_id:
+              nuovoImport.id,
 
-          materiale:
-            materiale.nome,
+            materiale:
+              materiale.nome,
 
-          prezzo_unitario:
-            materiale.prezzo,
+            prezzo_unitario:
+              materiale.prezzo,
 
-          quantita:
-            materiale.quantita,
+            quantita:
+              materiale.quantita,
 
-          subtotale:
-            materiale.subtotale,
-        })
-      );
+            subtotale:
+              materiale.subtotale,
+          })
+        );
 
-      const { error: righeError } =
-        await supabase
-          .from("import_items")
-          .insert(righe);
+      const {
+        error: righeError,
+      } = await supabase
+        .from("import_items")
+        .insert(righe);
 
       if (righeError) {
-        // Evitiamo di lasciare
-        // un import incompleto.
-
         await supabase
           .from("imports")
           .delete()
@@ -319,7 +351,10 @@ export default function ImportPage() {
       setQuantita({});
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(
+          "/dashboard"
+        );
+
         router.refresh();
       }, 1200);
     } catch (error) {
@@ -340,50 +375,81 @@ export default function ImportPage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div>
-          Caricamento import...
-        </div>
-      </main>
+      <>
+        <Sidebar />
+
+        <main
+          style={{
+            minHeight:
+              "100vh",
+
+            marginLeft:
+              "250px",
+
+            padding:
+              "30px",
+          }}
+        >
+          <div
+            className="container"
+            style={{
+              maxWidth:
+                "1100px",
+            }}
+          >
+            Caricamento import...
+          </div>
+        </main>
+      </>
     );
   }
 
-  const totale = calcolaTotale();
+  const totale =
+    calcolaTotale();
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "30px",
-      }}
-    >
-      <div
-        className="container"
+    <>
+      <Sidebar />
+
+      <main
         style={{
-          maxWidth: "1100px",
+          minHeight: "100vh",
+
+          marginLeft: "250px",
+
+          padding: "30px",
         }}
       >
-        {/* HEADER */}
-
         <div
+          className="container"
           style={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems: "center",
-            gap: "20px",
-            flexWrap: "wrap",
-            marginBottom: "35px",
+            maxWidth: "1100px",
           }}
         >
-          <div>
+          {/* HEADER */}
+
+          <div
+            style={{
+              marginBottom:
+                "35px",
+            }}
+          >
             <div
               style={{
-                color: "#c42a2a",
-                fontSize: "12px",
-                fontWeight: "bold",
-                letterSpacing: "4px",
-                marginBottom: "6px",
+                color:
+                  "#c42a2a",
+
+                fontSize:
+                  "12px",
+
+                fontWeight:
+                  "bold",
+
+                letterSpacing:
+                  "4px",
+
+                marginBottom:
+                  "6px",
               }}
             >
               ARMERIA 200
@@ -394,277 +460,291 @@ export default function ImportPage() {
             </h1>
 
             <p className="subtitle">
-              Registra un ordine di materiali
-              per l'Armeria.
+              Registra un ordine
+              di materiali per
+              l'Armeria.
             </p>
           </div>
 
-          <button
-            className="btn btn-dark"
-            onClick={() =>
-              router.push(
-                "/dashboard"
-              )
-            }
+          {/* MATERIALI */}
+
+          <div
+            style={{
+              display: "grid",
+
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(250px, 1fr))",
+
+              gap: "15px",
+            }}
           >
-            ← Dashboard
-          </button>
-        </div>
+            {MATERIALI.map(
+              (materiale) => {
+                const qta =
+                  Number(
+                    quantita[
+                      materiale.nome
+                    ] || 0
+                  );
 
-        {/* MATERIALI */}
+                const subtotale =
+                  materiale.prezzo *
+                  qta;
 
-        <div
-          style={{
-            display: "grid",
-
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(250px, 1fr))",
-
-            gap: "15px",
-          }}
-        >
-          {MATERIALI.map(
-            (materiale) => {
-              const qta = Number(
-                quantita[
-                  materiale.nome
-                ] || 0
-              );
-
-              const subtotale =
-                materiale.prezzo *
-                qta;
-
-              return (
-                <div
-                  className="card"
-                  key={materiale.nome}
-                  style={{
-                    padding: "20px",
-                  }}
-                >
+                return (
                   <div
+                    className="card"
+                    key={
+                      materiale.nome
+                    }
                     style={{
-                      display: "flex",
-
-                      justifyContent:
-                        "space-between",
-
-                      alignItems:
-                        "flex-start",
-
-                      gap: "15px",
-
-                      marginBottom:
+                      padding:
                         "20px",
                     }}
                   >
-                    <div>
-                      <h3
-                        style={{
-                          fontSize:
-                            "17px",
-                        }}
-                      >
-                        {materiale.nome}
-                      </h3>
-
-                      <div
-                        style={{
-                          color:
-                            "#777",
-
-                          fontSize:
-                            "12px",
-
-                          marginTop:
-                            "5px",
-                        }}
-                      >
-                        Prezzo unitario
-                      </div>
-                    </div>
-
                     <div
                       style={{
-                        color:
-                          "#c42a2a",
-
-                        fontSize:
-                          "18px",
-
-                        fontWeight:
-                          "900",
-                      }}
-                    >
-                      {formattaSoldi(
-                        materiale.prezzo
-                      )}
-                    </div>
-                  </div>
-
-                  <label>
-                    Quantità
-                  </label>
-
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={qta}
-                    onChange={(e) =>
-                      cambiaQuantita(
-                        materiale.nome,
-                        e.target.value
-                      )
-                    }
-                    style={{
-                      marginTop:
-                        "8px",
-                    }}
-                  />
-
-                  {qta > 0 && (
-                    <div
-                      style={{
-                        marginTop:
-                          "15px",
-
-                        paddingTop:
-                          "15px",
-
-                        borderTop:
-                          "1px solid #222",
-
                         display:
                           "flex",
 
                         justifyContent:
                           "space-between",
 
-                        color:
-                          "#aaa",
+                        alignItems:
+                          "flex-start",
 
-                        fontSize:
-                          "13px",
+                        gap: "15px",
+
+                        marginBottom:
+                          "20px",
                       }}
                     >
-                      <span>
-                        Subtotale
-                      </span>
+                      <div>
+                        <h3
+                          style={{
+                            fontSize:
+                              "17px",
+                          }}
+                        >
+                          {
+                            materiale.nome
+                          }
+                        </h3>
 
-                      <strong
+                        <div
+                          style={{
+                            color:
+                              "#777",
+
+                            fontSize:
+                              "12px",
+
+                            marginTop:
+                              "5px",
+                          }}
+                        >
+                          Prezzo
+                          unitario
+                        </div>
+                      </div>
+
+                      <div
                         style={{
                           color:
-                            "#fff",
+                            "#c42a2a",
+
+                          fontSize:
+                            "18px",
+
+                          fontWeight:
+                            "900",
                         }}
                       >
                         {formattaSoldi(
-                          subtotale
+                          materiale.prezzo
                         )}
-                      </strong>
+                      </div>
                     </div>
-                  )}
-                </div>
-              );
-            }
-          )}
-        </div>
 
-        {/* TOTALE */}
+                    <label>
+                      Quantità
+                    </label>
 
-        <div
-          className="card"
-          style={{
-            position: "sticky",
-            bottom: "20px",
-            marginTop: "30px",
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={qta}
+                      onChange={(
+                        e
+                      ) =>
+                        cambiaQuantita(
+                          materiale.nome,
+                          e.target
+                            .value
+                        )
+                      }
+                      style={{
+                        marginTop:
+                          "8px",
+                      }}
+                    />
 
-            border:
-              "1px solid rgba(139,30,30,.4)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
+                    {qta > 0 && (
+                      <div
+                        style={{
+                          marginTop:
+                            "15px",
 
-              justifyContent:
-                "space-between",
+                          paddingTop:
+                            "15px",
 
-              alignItems: "center",
+                          borderTop:
+                            "1px solid #222",
 
-              gap: "25px",
+                          display:
+                            "flex",
 
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  color: "#777",
+                          justifyContent:
+                            "space-between",
 
-                  fontSize: "11px",
+                          color:
+                            "#aaa",
 
-                  textTransform:
-                    "uppercase",
+                          fontSize:
+                            "13px",
+                        }}
+                      >
+                        <span>
+                          Subtotale
+                        </span>
 
-                  letterSpacing:
-                    "2px",
-                }}
-              >
-                Totale Import
-              </div>
-
-              <div
-                style={{
-                  fontSize: "34px",
-
-                  fontWeight:
-                    "900",
-
-                  marginTop:
-                    "5px",
-                }}
-              >
-                {formattaSoldi(
-                  totale
-                )}
-              </div>
-            </div>
-
-            <button
-              className="btn btn-primary"
-              onClick={
-                registraImport
+                        <strong
+                          style={{
+                            color:
+                              "#fff",
+                          }}
+                        >
+                          {formattaSoldi(
+                            subtotale
+                          )}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
+                );
               }
-              disabled={
-                salvataggio ||
-                totale <= 0
-              }
-              style={{
-                minWidth:
-                  "220px",
-              }}
-            >
-              {salvataggio
-                ? "REGISTRAZIONE..."
-                : "REGISTRA IMPORT"}
-            </button>
+            )}
           </div>
 
-          {errore && (
-            <div className="error-message">
-              {errore}
-            </div>
-          )}
+          {/* TOTALE */}
 
-          {successo && (
-            <div className="success-message">
-              {successo}
+          <div
+            className="card"
+            style={{
+              position:
+                "sticky",
+
+              bottom: "20px",
+
+              marginTop:
+                "30px",
+
+              border:
+                "1px solid rgba(139,30,30,.4)",
+
+              boxShadow:
+                "0 -10px 30px rgba(0,0,0,.25)",
+            }}
+          >
+            <div
+              style={{
+                display:
+                  "flex",
+
+                justifyContent:
+                  "space-between",
+
+                alignItems:
+                  "center",
+
+                gap: "25px",
+
+                flexWrap:
+                  "wrap",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    color:
+                      "#777",
+
+                    fontSize:
+                      "11px",
+
+                    textTransform:
+                      "uppercase",
+
+                    letterSpacing:
+                      "2px",
+                  }}
+                >
+                  Totale Import
+                </div>
+
+                <div
+                  style={{
+                    fontSize:
+                      "34px",
+
+                    fontWeight:
+                      "900",
+
+                    marginTop:
+                      "5px",
+                  }}
+                >
+                  {formattaSoldi(
+                    totale
+                  )}
+                </div>
+              </div>
+
+              <button
+                className="btn btn-primary"
+                onClick={
+                  registraImport
+                }
+                disabled={
+                  salvataggio ||
+                  totale <= 0
+                }
+                style={{
+                  minWidth:
+                    "220px",
+                }}
+              >
+                {salvataggio
+                  ? "REGISTRAZIONE..."
+                  : "REGISTRA IMPORT"}
+              </button>
             </div>
-          )}
+
+            {errore && (
+              <div className="error-message">
+                {errore}
+              </div>
+            )}
+
+            {successo && (
+              <div className="success-message">
+                {successo}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
