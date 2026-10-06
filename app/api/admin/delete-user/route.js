@@ -32,28 +32,11 @@ export async function POST(request) {
     }
 
     const accessToken =
-      authorization.replace("Bearer ", "");
+      authorization
+        .replace("Bearer ", "")
+        .trim();
 
-    // ==============================
-    // CLIENT PUBBLICO
-    // ==============================
-
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseKey
-    );
-
-    const {
-      data: { user: adminUser },
-      error: userError,
-    } = await supabase.auth.getUser(
-      accessToken
-    );
-
-    if (
-      userError ||
-      !adminUser
-    ) {
+    if (!accessToken) {
       return NextResponse.json(
         {
           error:
@@ -66,65 +49,44 @@ export async function POST(request) {
     }
 
     // ==============================
-    // CONTROLLO CHE SIA ADMIN
+    // CLIENT PER VERIFICA TOKEN
     // ==============================
+
+    const supabaseAuth = createClient(
+      supabaseUrl,
+      supabaseKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
     const {
-      data: profiloAdmin,
-      error: profiloAdminError,
-    } = await supabase
-      .from("profiles")
-      .select("id, ruolo, attivo")
-      .eq("id", adminUser.id)
-      .single();
+      data: { user: adminUser },
+      error: userError,
+    } =
+      await supabaseAuth.auth.getUser(
+        accessToken
+      );
 
     if (
-      profiloAdminError ||
-      !profiloAdmin ||
-      profiloAdmin.ruolo !== "admin" ||
-      !profiloAdmin.attivo
+      userError ||
+      !adminUser
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "Non sei autorizzato a eliminare dipendenti.",
-        },
-        {
-          status: 403,
-        }
+      console.error(
+        "Errore verifica token admin:",
+        userError
       );
-    }
 
-    // ==============================
-    // DIPENDENTE DA ELIMINARE
-    // ==============================
-
-    const body = await request.json();
-
-    const userId = body.user_id;
-
-    if (!userId) {
       return NextResponse.json(
         {
           error:
-            "Dipendente non specificato.",
+            "Sessione amministratore non valida.",
         },
         {
-          status: 400,
-        }
-      );
-    }
-
-    // IMPEDISCE ALL'ADMIN DI ELIMINARE SE STESSO
-
-    if (userId === adminUser.id) {
-      return NextResponse.json(
-        {
-          error:
-            "Non puoi eliminare il tuo account amministratore.",
-        },
-        {
-          status: 400,
+          status: 401,
         }
       );
     }
@@ -134,7 +96,8 @@ export async function POST(request) {
     // ==============================
 
     const serviceRoleKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+      process.env
+        .SUPABASE_SERVICE_ROLE_KEY;
 
     if (!serviceRoleKey) {
       console.error(
@@ -152,19 +115,113 @@ export async function POST(request) {
       );
     }
 
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      serviceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    // Questo client rimane SOLO sul server.
+    // Bypassa la RLS e viene usato dopo
+    // aver verificato il token Auth.
+
+    const supabaseAdmin =
+      createClient(
+        supabaseUrl,
+        serviceRoleKey,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      );
 
     // ==============================
-    // CONTROLLA IL DIPENDENTE
+    // CONTROLLO PROFILO ADMIN
+    // ==============================
+
+    const {
+      data: profiloAdmin,
+      error: profiloAdminError,
+    } = await supabaseAdmin
+      .from("profiles")
+      .select(
+        "id, ruolo, attivo"
+      )
+      .eq("id", adminUser.id)
+      .single();
+
+    if (profiloAdminError) {
+      console.error(
+        "Errore lettura profilo admin:",
+        profiloAdminError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Impossibile verificare i permessi amministratore.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (
+      !profiloAdmin ||
+      profiloAdmin.ruolo !==
+        "admin" ||
+      !profiloAdmin.attivo
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Non sei autorizzato a eliminare dipendenti.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    // ==============================
+    // DATI RICHIESTA
+    // ==============================
+
+    const body =
+      await request.json();
+
+    const userId =
+      body?.user_id;
+
+    if (!userId) {
+      return NextResponse.json(
+        {
+          error:
+            "Dipendente non specificato.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // ==============================
+    // BLOCCA AUTO-ELIMINAZIONE
+    // ==============================
+
+    if (
+      userId === adminUser.id
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Non puoi eliminare il tuo account amministratore.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // ==============================
+    // CERCA DIPENDENTE
     // ==============================
 
     const {
@@ -186,6 +243,11 @@ export async function POST(request) {
       dipendenteError ||
       !dipendente
     ) {
+      console.error(
+        "Errore ricerca dipendente:",
+        dipendenteError
+      );
+
       return NextResponse.json(
         {
           error:
@@ -197,9 +259,14 @@ export async function POST(request) {
       );
     }
 
-    // NON PERMETTIAMO DI ELIMINARE ALTRI ADMIN
+    // ==============================
+    // PROTEZIONE ACCOUNT ADMIN
+    // ==============================
 
-    if (dipendente.ruolo === "admin") {
+    if (
+      dipendente.ruolo ===
+      "admin"
+    ) {
       return NextResponse.json(
         {
           error:
@@ -215,29 +282,36 @@ export async function POST(request) {
     // ELIMINA UTENTE AUTH
     // ==============================
     //
-    // profiles.id ha ON DELETE CASCADE
-    // verso auth.users.
-    //
-    // Eliminando l'utente Auth:
+    // Eliminando auth.users:
     //
     // auth.users
-    //      ↓
+    //      ↓ ON DELETE CASCADE
     // profiles
     //
-    // viene eliminato automaticamente.
+    // invoices/imports:
     //
-    // Le fatture e gli import invece
-    // rimangono perché abbiamo impostato:
+    // employee_id
+    //      ↓ ON DELETE SET NULL
     //
-    // ON DELETE SET NULL
+    // quindi fatture e import
+    // rimangono nello storico.
     //
+    // I dati storici del dipendente
+    // sono già salvati nei campi:
+    //
+    // employee_nome
+    // employee_cognome
+    // employee_username
+    // employee_grado
+    // ==============================
 
     const {
       error: deleteError,
     } =
-      await supabaseAdmin.auth.admin.deleteUser(
-        userId
-      );
+      await supabaseAdmin
+        .auth
+        .admin
+        .deleteUser(userId);
 
     if (deleteError) {
       console.error(
@@ -287,7 +361,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         error:
-          error.message ||
+          error?.message ||
           "Errore interno del server.",
       },
       {
