@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [creazione, setCreazione] = useState(false);
   const [salvataggio, setSalvataggio] = useState(null);
   const [azioneFattura, setAzioneFattura] = useState(null);
+  const [eliminazione, setEliminazione] = useState(null);
 
   const [nuovoDipendente, setNuovoDipendente] = useState({
     nome: "",
@@ -144,18 +145,15 @@ export default function AdminPage() {
         ...profilo,
 
         numero_fatture: Number(
-          statisticheMap[profilo.id]
-            ?.numero_fatture || 0
+          statisticheMap[profilo.id]?.numero_fatture || 0
         ),
 
         fatturato: Number(
-          statisticheMap[profilo.id]
-            ?.fatturato || 0
+          statisticheMap[profilo.id]?.fatturato || 0
         ),
 
         stipendio: Number(
-          statisticheMap[profilo.id]
-            ?.stipendio || 0
+          statisticheMap[profilo.id]?.stipendio || 0
         ),
       })
     );
@@ -223,10 +221,7 @@ export default function AdminPage() {
   // CREA DIPENDENTE
   // ==============================
 
-  function modificaNuovoDipendente(
-    campo,
-    valore
-  ) {
+  function modificaNuovoDipendente(campo, valore) {
     setNuovoDipendente((precedente) => ({
       ...precedente,
       [campo]: valore,
@@ -263,26 +258,19 @@ export default function AdminPage() {
 
           body: JSON.stringify({
             nome: nuovoDipendente.nome.trim(),
+            cognome: nuovoDipendente.cognome.trim(),
 
-            cognome:
-              nuovoDipendente.cognome.trim(),
+            username: nuovoDipendente.username
+              .trim()
+              .toLowerCase(),
 
-            username:
-              nuovoDipendente.username
-                .trim()
-                .toLowerCase(),
-
-            password:
-              nuovoDipendente.password,
-
-            grado:
-              nuovoDipendente.grado,
+            password: nuovoDipendente.password,
+            grado: nuovoDipendente.grado,
           }),
         }
       );
 
-      const risultato =
-        await response.json();
+      const risultato = await response.json();
 
       if (!response.ok) {
         throw new Error(
@@ -397,6 +385,91 @@ export default function AdminPage() {
       );
     } finally {
       setSalvataggio(null);
+    }
+  }
+
+  // ==============================
+  // ELIMINA DIPENDENTE
+  // ==============================
+
+  async function eliminaDipendente(
+    dipendente
+  ) {
+    const nomeCompleto =
+      `${dipendente.nome || ""} ${
+        dipendente.cognome || ""
+      }`.trim();
+
+    const conferma = window.confirm(
+      `ATTENZIONE!\n\nVuoi eliminare definitivamente ${nomeCompleto} (@${dipendente.username})?\n\nL'account non potrà più accedere al gestionale.\n\nLe sue vecchie fatture e i suoi import resteranno nello storico.\n\nQuesta operazione non può essere annullata.`
+    );
+
+    if (!conferma) {
+      return;
+    }
+
+    setErrore("");
+    setSuccesso("");
+    setEliminazione(dipendente.id);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error(
+          "Sessione non valida. Effettua nuovamente il login."
+        );
+      }
+
+      const response = await fetch(
+        "/api/admin/delete-user",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+
+          body: JSON.stringify({
+            user_id: dipendente.id,
+          }),
+        }
+      );
+
+      const risultato =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          risultato.error ||
+            "Errore durante l'eliminazione del dipendente."
+        );
+      }
+
+      setSuccesso(
+        `${nomeCompleto} eliminato definitivamente.`
+      );
+
+      await Promise.all([
+        caricaDipendenti(),
+        caricaFatture(),
+        caricaImports(),
+      ]);
+    } catch (error) {
+      console.error(
+        "Errore eliminazione dipendente:",
+        error
+      );
+
+      setErrore(
+        error.message ||
+          "Errore durante l'eliminazione del dipendente."
+      );
+    } finally {
+      setEliminazione(null);
     }
   }
 
@@ -1180,7 +1253,9 @@ export default function AdminPage() {
                           }
                           disabled={
                             salvataggio ===
-                            dipendente.id
+                              dipendente.id ||
+                            eliminazione ===
+                              dipendente.id
                           }
                           onChange={(e) =>
                             cambiaGrado(
@@ -1216,22 +1291,58 @@ export default function AdminPage() {
                         </select>
                       </div>
 
-                      <button
-                        className="btn btn-dark"
-                        disabled={
-                          salvataggio ===
-                          dipendente.id
-                        }
-                        onClick={() =>
-                          cambiaStatoDipendente(
-                            dipendente
-                          )
-                        }
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "10px",
+                          flexWrap: "wrap",
+                        }}
                       >
-                        {dipendente.attivo
-                          ? "Disattiva Dipendente"
-                          : "Riattiva Dipendente"}
-                      </button>
+                        <button
+                          className="btn btn-dark"
+                          disabled={
+                            salvataggio ===
+                              dipendente.id ||
+                            eliminazione ===
+                              dipendente.id
+                          }
+                          onClick={() =>
+                            cambiaStatoDipendente(
+                              dipendente
+                            )
+                          }
+                        >
+                          {dipendente.attivo
+                            ? "Disattiva Dipendente"
+                            : "Riattiva Dipendente"}
+                        </button>
+
+                        <button
+                          className="btn btn-primary"
+                          disabled={
+                            eliminazione ===
+                              dipendente.id ||
+                            salvataggio ===
+                              dipendente.id
+                          }
+                          onClick={() =>
+                            eliminaDipendente(
+                              dipendente
+                            )
+                          }
+                          style={{
+                            background:
+                              "#7a1010",
+                            borderColor:
+                              "#a51d1d",
+                          }}
+                        >
+                          {eliminazione ===
+                          dipendente.id
+                            ? "Eliminazione..."
+                            : "Elimina definitivamente"}
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <div
@@ -1333,7 +1444,7 @@ export default function AdminPage() {
                             }}
                           >
                             {nome ||
-                              "Dipendente"}
+                              "Dipendente eliminato"}
                           </div>
 
                           <div
@@ -1349,7 +1460,7 @@ export default function AdminPage() {
                             {fattura
                               .profiles
                               ?.grado ||
-                              "Dipendente"}{" "}
+                              "Account eliminato"}{" "}
                             •{" "}
                             {formattaData(
                               fattura.created_at
