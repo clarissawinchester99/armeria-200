@@ -410,6 +410,17 @@ export default function DashboardPage() {
             }
           />
 
+          {/* STORICO IMPORT */}
+
+          <MenuCard
+            titolo="Storico Import"
+            descrizione="Visualizza gli ordini di materiali già registrati."
+            bottone="Apri storico"
+            onClick={() =>
+              router.push("/storico-import")
+            }
+          />
+
           {/* STIPENDIO */}
 
           <MenuCard
