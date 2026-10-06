@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import Sidebar from "../../components/Sidebar";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -31,7 +32,9 @@ export default function DashboardPage() {
         return;
       }
 
+      // ==============================
       // PROFILO
+      // ==============================
 
       const {
         data: profiloData,
@@ -58,7 +61,9 @@ export default function DashboardPage() {
         );
       }
 
+      // ==============================
       // ACCOUNT DISATTIVATO
+      // ==============================
 
       if (!profiloData.attivo) {
         await supabase.auth.signOut();
@@ -68,7 +73,9 @@ export default function DashboardPage() {
 
       setProfilo(profiloData);
 
+      // ==============================
       // STATISTICHE
+      // ==============================
 
       const {
         data: statsData,
@@ -112,11 +119,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    router.replace("/login");
-  }
-
   function formattaSoldi(numero) {
     return new Intl.NumberFormat("it-IT", {
       style: "currency",
@@ -125,22 +127,41 @@ export default function DashboardPage() {
     }).format(Number(numero || 0));
   }
 
+  // ==============================
+  // LOADING
+  // ==============================
+
   if (loading) {
     return (
-      <main className="page">
-        <div>
-          <h2>ARMERIA 200</h2>
+      <>
+        <Sidebar />
 
-          <p
+        <main
+          style={{
+            minHeight: "100vh",
+            marginLeft: "250px",
+            padding: "30px",
+          }}
+        >
+          <div
+            className="container"
             style={{
-              color: "#777",
-              marginTop: "10px",
+              maxWidth: "1100px",
             }}
           >
-            Caricamento dashboard...
-          </p>
-        </div>
-      </main>
+            <h2>ARMERIA 200</h2>
+
+            <p
+              style={{
+                color: "#777",
+                marginTop: "10px",
+              }}
+            >
+              Caricamento dashboard...
+            </p>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -156,32 +177,34 @@ export default function DashboardPage() {
       profilo.cognome || ""
     }`.trim();
 
+  // ==============================
+  // PAGINA
+  // ==============================
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "30px",
-      }}
-    >
-      <div
-        className="container"
+    <>
+      <Sidebar />
+
+      <main
         style={{
-          maxWidth: "1100px",
+          minHeight: "100vh",
+          marginLeft: "250px",
+          padding: "30px",
         }}
       >
-        {/* HEADER */}
-
         <div
+          className="container"
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "20px",
-            flexWrap: "wrap",
-            marginBottom: "35px",
+            maxWidth: "1100px",
           }}
         >
-          <div>
+          {/* HEADER */}
+
+          <div
+            style={{
+              marginBottom: "35px",
+            }}
+          >
             <div
               style={{
                 color: "#c42a2a",
@@ -195,272 +218,289 @@ export default function DashboardPage() {
             </div>
 
             <h1 className="title">
-              ARMERIA 200
+              DASHBOARD
             </h1>
 
             <p className="subtitle">
-              Gestionale dipendenti
+              Gestionale Armeria 200
             </p>
           </div>
 
-          <button
-            className="btn btn-dark"
-            onClick={logout}
-          >
-            Logout
-          </button>
-        </div>
+          {/* PROFILO */}
 
-        {/* PROFILO */}
-
-        <div
-          className="card"
-          style={{
-            marginBottom: "25px",
-            border:
-              "1px solid rgba(139,30,30,.35)",
-          }}
-        >
           <div
+            className="card"
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "20px",
-              flexWrap: "wrap",
+              marginBottom: "25px",
+
+              border:
+                "1px solid rgba(139,30,30,.35)",
+
+              background:
+                "linear-gradient(135deg, rgba(139,30,30,.08), rgba(0,0,0,0))",
             }}
           >
-            <div>
-              <div
-                style={{
-                  color: "#777",
-                  fontSize: "11px",
-                  textTransform: "uppercase",
-                  letterSpacing: "2px",
-                  marginBottom: "8px",
-                }}
-              >
-                Benvenuto
+            <div
+              style={{
+                display: "flex",
+                justifyContent:
+                  "space-between",
+                alignItems: "center",
+                gap: "20px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    color: "#777",
+                    fontSize: "11px",
+                    textTransform:
+                      "uppercase",
+                    letterSpacing: "2px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Benvenuto
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "26px",
+                    fontWeight: "900",
+                  }}
+                >
+                  {nomeCompleto ||
+                    profilo.username}
+                </div>
+
+                <div
+                  style={{
+                    color: "#777",
+                    fontSize: "13px",
+                    marginTop: "5px",
+                  }}
+                >
+                  @{profilo.username}
+                </div>
               </div>
 
               <div
                 style={{
-                  fontSize: "26px",
-                  fontWeight: "900",
+                  textAlign: "right",
                 }}
               >
-                {nomeCompleto ||
-                  profilo.username}
-              </div>
+                {admin && (
+                  <div
+                    style={{
+                      display:
+                        "inline-block",
 
-              <div
-                style={{
-                  color: "#777",
-                  fontSize: "13px",
-                  marginTop: "5px",
-                }}
-              >
-                @{profilo.username}
+                      background:
+                        "rgba(139,30,30,.18)",
+
+                      border:
+                        "1px solid rgba(196,42,42,.35)",
+
+                      color: "#e64b4b",
+
+                      padding:
+                        "5px 10px",
+
+                      borderRadius:
+                        "20px",
+
+                      fontSize: "10px",
+
+                      fontWeight:
+                        "900",
+
+                      letterSpacing:
+                        "1px",
+
+                      marginBottom:
+                        "8px",
+                    }}
+                  >
+                    ADMIN
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    color: "#fff",
+                    fontSize: "18px",
+                    fontWeight: "900",
+                  }}
+                >
+                  {profilo.grado ||
+                    "Dipendente"}
+                </div>
+
+                <div
+                  style={{
+                    color: "#c42a2a",
+                    fontSize: "13px",
+                    fontWeight: "800",
+                    marginTop: "4px",
+                  }}
+                >
+                  Stipendio{" "}
+                  {
+                    profilo.percentuale_stipendio
+                  }
+                  %
+                </div>
               </div>
+            </div>
+          </div>
+
+          {/* TITOLO STATISTICHE */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              marginTop: "35px",
+            }}
+          >
+            <div
+              style={{
+                color: "#555",
+                fontSize: "10px",
+                fontWeight: "900",
+                letterSpacing: "3px",
+                marginBottom: "7px",
+              }}
+            >
+              RIEPILOGO
+            </div>
+
+            <h2
+              style={{
+                fontSize: "18px",
+                textTransform:
+                  "uppercase",
+                letterSpacing: "2px",
+              }}
+            >
+              Le tue statistiche
+            </h2>
+          </div>
+
+          {/* STATISTICHE */}
+
+          <div
+            style={{
+              display: "grid",
+
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(220px, 1fr))",
+
+              gap: "15px",
+
+              marginBottom: "35px",
+            }}
+          >
+            <StatCard
+              titolo="Fatturato personale"
+              valore={formattaSoldi(
+                stats.fatturato
+              )}
+              descrizione="Totale delle tue fatture valide"
+            />
+
+            <StatCard
+              titolo="Stipendio maturato"
+              valore={formattaSoldi(
+                stats.stipendio
+              )}
+              descrizione={`Calcolato al ${profilo.percentuale_stipendio}%`}
+            />
+
+            <StatCard
+              titolo="Fatture effettuate"
+              valore={
+                stats.numero_fatture
+              }
+              descrizione="Numero di fatture valide"
+            />
+          </div>
+
+          {/* INFO */}
+
+          <div
+            className="card"
+            style={{
+              marginTop: "20px",
+              border:
+                "1px solid rgba(255,255,255,.05)",
+            }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "10px",
+                fontWeight: "900",
+                letterSpacing: "3px",
+                marginBottom: "10px",
+              }}
+            >
+              ARMERIA 200
             </div>
 
             <div
               style={{
-                textAlign: "right",
+                fontSize: "18px",
+                fontWeight: "900",
+                marginBottom: "8px",
               }}
             >
-              {admin && (
-                <div
-                  style={{
-                    display: "inline-block",
-                    background:
-                      "rgba(139,30,30,.18)",
-                    border:
-                      "1px solid rgba(196,42,42,.35)",
-                    color: "#e64b4b",
-                    padding: "5px 10px",
-                    borderRadius: "20px",
-                    fontSize: "10px",
-                    fontWeight: "900",
-                    letterSpacing: "1px",
-                    marginBottom: "8px",
-                  }}
-                >
-                  ADMIN
-                </div>
-              )}
-
-              <div
-                style={{
-                  color: "#fff",
-                  fontSize: "18px",
-                  fontWeight: "900",
-                }}
-              >
-                {profilo.grado ||
-                  "Dipendente"}
-              </div>
-
-              <div
-                style={{
-                  color: "#c42a2a",
-                  fontSize: "13px",
-                  fontWeight: "800",
-                  marginTop: "4px",
-                }}
-              >
-                Stipendio{" "}
-                {
-                  profilo.percentuale_stipendio
-                }
-                %
-              </div>
+              Gestionale Dipendenti
             </div>
+
+            <p
+              style={{
+                color: "#777",
+                fontSize: "13px",
+                lineHeight: "1.7",
+                margin: 0,
+              }}
+            >
+              Utilizza il menu a sinistra
+              per registrare fatture,
+              effettuare ordini di import,
+              consultare gli storici e
+              controllare il tuo stipendio.
+              {admin &&
+                " Le funzioni di amministrazione sono disponibili nella sezione dedicata."}
+            </p>
           </div>
         </div>
-
-        {/* STATISTICHE */}
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "15px",
-            marginBottom: "35px",
-          }}
-        >
-          <StatCard
-            titolo="Fatturato personale"
-            valore={formattaSoldi(
-              stats.fatturato
-            )}
-          />
-
-          <StatCard
-            titolo="Stipendio maturato"
-            valore={formattaSoldi(
-              stats.stipendio
-            )}
-          />
-
-          <StatCard
-            titolo="Fatture effettuate"
-            valore={stats.numero_fatture}
-          />
-        </div>
-
-        {/* MENU */}
-
-        <div
-          style={{
-            marginBottom: "15px",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "18px",
-              textTransform: "uppercase",
-              letterSpacing: "2px",
-            }}
-          >
-            Gestionale
-          </h2>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(230px, 1fr))",
-            gap: "15px",
-          }}
-        >
-          {/* NUOVA FATTURA */}
-
-          <MenuCard
-            titolo="Nuova fattura"
-            descrizione="Registra una nuova vendita dell'Armeria."
-            bottone="Crea fattura"
-            onClick={() =>
-              router.push("/fatture")
-            }
-          />
-
-          {/* NUOVO IMPORT */}
-
-          <MenuCard
-            titolo="Nuovo Import"
-            descrizione="Registra un nuovo ordine di materiali per l'Armeria."
-            bottone="Registra Import"
-            onClick={() =>
-              router.push("/import")
-            }
-            evidenza
-          />
-
-          {/* STORICO FATTURE */}
-
-          <MenuCard
-            titolo="Storico fatture"
-            descrizione="Visualizza le fatture già registrate."
-            bottone="Apri storico"
-            onClick={() =>
-              router.push("/storico")
-            }
-          />
-
-          {/* STORICO IMPORT */}
-
-          <MenuCard
-            titolo="Storico Import"
-            descrizione="Visualizza gli ordini di materiali già registrati."
-            bottone="Apri storico"
-            onClick={() =>
-              router.push("/storico-import")
-            }
-          />
-
-          {/* STIPENDIO */}
-
-          <MenuCard
-            titolo="Stipendio"
-            descrizione={`Controlla il tuo stipendio maturato al ${profilo.percentuale_stipendio}%.`}
-            bottone="Vedi stipendio"
-            onClick={() =>
-              router.push("/stipendio")
-            }
-          />
-
-          {/* ADMIN */}
-
-          {admin && (
-            <MenuCard
-              titolo="Pannello Admin"
-              descrizione="Gestisci personale, ruoli, fatture, stipendi e catalogo."
-              bottone="Amministrazione"
-              onClick={() =>
-                router.push("/admin")
-              }
-              admin
-            />
-          )}
-        </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
+
+// ==============================
+// STAT CARD
+// ==============================
 
 function StatCard({
   titolo,
   valore,
+  descrizione,
 }) {
   return (
-    <div className="card">
+    <div
+      className="card"
+      style={{
+        minHeight: "135px",
+      }}
+    >
       <div
         style={{
           color: "#777",
-          fontSize: "11px",
+          fontSize: "10px",
           textTransform: "uppercase",
           letterSpacing: "1.5px",
           marginBottom: "10px",
@@ -473,78 +513,20 @@ function StatCard({
         style={{
           fontSize: "28px",
           fontWeight: "900",
+          marginBottom: "10px",
         }}
       >
         {valore}
       </div>
-    </div>
-  );
-}
-
-function MenuCard({
-  titolo,
-  descrizione,
-  bottone,
-  onClick,
-  admin = false,
-  evidenza = false,
-}) {
-  const speciale =
-    admin || evidenza;
-
-  return (
-    <div
-      className="card"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "200px",
-
-        border: speciale
-          ? "1px solid rgba(139,30,30,.45)"
-          : undefined,
-      }}
-    >
-      <div
-        style={{
-          color: speciale
-            ? "#c42a2a"
-            : "#fff",
-          fontSize: "18px",
-          fontWeight: "900",
-          textTransform: "uppercase",
-          letterSpacing: "1px",
-          marginBottom: "10px",
-        }}
-      >
-        {titolo}
-      </div>
 
       <div
         style={{
-          color: "#777",
-          fontSize: "13px",
-          lineHeight: "1.6",
-          flex: 1,
+          color: "#555",
+          fontSize: "11px",
         }}
       >
         {descrizione}
       </div>
-
-      <button
-        className={
-          speciale
-            ? "btn btn-primary"
-            : "btn btn-dark"
-        }
-        onClick={onClick}
-        style={{
-          marginTop: "20px",
-          width: "100%",
-        }}
-      >
-        {bottone}
-      </button>
     </div>
   );
 }
