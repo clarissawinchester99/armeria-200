@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
+const GRADI = {
+  Dipendente: 20,
+  Armaiolo: 25,
+  "Vice-Direttore": 30,
+  Direttore: 40,
+  Proprietario: 45,
+};
+
 export default function AdminPage() {
   const router = useRouter();
 
@@ -17,18 +25,15 @@ export default function AdminPage() {
 
   const [salvataggio, setSalvataggio] = useState(null);
   const [operazioneFattura, setOperazioneFattura] = useState(null);
+  const [creazioneDipendente, setCreazioneDipendente] = useState(false);
 
-  // NUOVO DIPENDENTE
   const [nuovoDipendente, setNuovoDipendente] = useState({
     nome: "",
     cognome: "",
     username: "",
     password: "",
-    percentuale_stipendio: 0,
+    grado: "Dipendente",
   });
-
-  const [creazioneDipendente, setCreazioneDipendente] =
-    useState(false);
 
   useEffect(() => {
     caricaAdmin();
@@ -48,7 +53,6 @@ export default function AdminPage() {
         return;
       }
 
-      // PROFILO ADMIN
       const { data: profiloData, error: profiloError } =
         await supabase
           .from("profiles")
@@ -91,6 +95,7 @@ export default function AdminPage() {
             nome,
             cognome,
             ruolo,
+            grado,
             percentuale_stipendio,
             attivo
           `);
@@ -108,6 +113,7 @@ export default function AdminPage() {
           return {
             ...stat,
             username: p?.username || "",
+            grado: p?.grado || "Dipendente",
             attivo: p?.attivo ?? true,
           };
         }
@@ -128,7 +134,8 @@ export default function AdminPage() {
             profiles (
               nome,
               cognome,
-              username
+              username,
+              grado
             )
           `)
           .order("created_at", {
@@ -152,9 +159,9 @@ export default function AdminPage() {
     }
   }
 
-  // ============================================
+  // ==================================================
   // CREA DIPENDENTE
-  // ============================================
+  // ==================================================
 
   function modificaNuovoDipendente(campo, valore) {
     setNuovoDipendente((precedente) => ({
@@ -194,9 +201,7 @@ export default function AdminPage() {
             cognome: nuovoDipendente.cognome,
             username: nuovoDipendente.username,
             password: nuovoDipendente.password,
-            percentuale_stipendio: Number(
-              nuovoDipendente.percentuale_stipendio || 0
-            ),
+            grado: nuovoDipendente.grado,
           }),
         }
       );
@@ -211,7 +216,7 @@ export default function AdminPage() {
       }
 
       setSuccesso(
-        `Dipendente ${nuovoDipendente.nome} ${nuovoDipendente.cognome} creato correttamente.`
+        `${nuovoDipendente.nome} ${nuovoDipendente.cognome} assunto come ${nuovoDipendente.grado} al ${GRADI[nuovoDipendente.grado]}%.`
       );
 
       setNuovoDipendente({
@@ -219,12 +224,12 @@ export default function AdminPage() {
         cognome: "",
         username: "",
         password: "",
-        percentuale_stipendio: 0,
+        grado: "Dipendente",
       });
 
       await caricaAdmin();
     } catch (error) {
-      console.error("Errore creazione dipendente:", error);
+      console.error(error);
 
       setErrore(
         error.message ||
@@ -235,38 +240,11 @@ export default function AdminPage() {
     }
   }
 
-  // ============================================
-  // PERCENTUALE STIPENDIO
-  // ============================================
+  // ==================================================
+  // CAMBIO GRADO
+  // ==================================================
 
-  function cambiaPercentualeLocale(id, valore) {
-    let percentuale = Number(valore);
-
-    if (Number.isNaN(percentuale)) {
-      percentuale = 0;
-    }
-
-    if (percentuale < 0) {
-      percentuale = 0;
-    }
-
-    if (percentuale > 100) {
-      percentuale = 100;
-    }
-
-    setDipendenti((precedenti) =>
-      precedenti.map((dipendente) =>
-        dipendente.id === id
-          ? {
-              ...dipendente,
-              percentuale_stipendio: percentuale,
-            }
-          : dipendente
-      )
-    );
-  }
-
-  async function salvaPercentuale(dipendente) {
+  async function cambiaGrado(dipendente, nuovoGrado) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
@@ -275,9 +253,7 @@ export default function AdminPage() {
       const { error } = await supabase
         .from("profiles")
         .update({
-          percentuale_stipendio: Number(
-            dipendente.percentuale_stipendio || 0
-          ),
+          grado: nuovoGrado,
         })
         .eq("id", dipendente.id);
 
@@ -286,9 +262,7 @@ export default function AdminPage() {
       }
 
       setSuccesso(
-        `Percentuale di ${nomeDipendente(
-          dipendente
-        )} aggiornata correttamente.`
+        `${nomeDipendente(dipendente)} ora è ${nuovoGrado} (${GRADI[nuovoGrado]}%).`
       );
 
       await caricaAdmin();
@@ -296,29 +270,27 @@ export default function AdminPage() {
       console.error(error);
 
       setErrore(
-        "Errore durante la modifica della percentuale."
+        "Errore durante la modifica del ruolo."
       );
     } finally {
       setSalvataggio(null);
     }
   }
 
-  // ============================================
-  // ATTIVA / DISATTIVA DIPENDENTE
-  // ============================================
+  // ==================================================
+  // ATTIVA / DISATTIVA
+  // ==================================================
 
   async function cambiaStato(dipendente) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
 
-    const nuovoStato = !dipendente.attivo;
-
     try {
       const { error } = await supabase
         .from("profiles")
         .update({
-          attivo: nuovoStato,
+          attivo: !dipendente.attivo,
         })
         .eq("id", dipendente.id);
 
@@ -327,9 +299,9 @@ export default function AdminPage() {
       }
 
       setSuccesso(
-        nuovoStato
-          ? "Dipendente riattivato."
-          : "Dipendente disattivato."
+        dipendente.attivo
+          ? "Dipendente disattivato."
+          : "Dipendente riattivato."
       );
 
       await caricaAdmin();
@@ -344,9 +316,9 @@ export default function AdminPage() {
     }
   }
 
-  // ============================================
+  // ==================================================
   // FATTURE
-  // ============================================
+  // ==================================================
 
   async function annullaFattura(id) {
     const conferma = window.confirm(
@@ -387,7 +359,7 @@ export default function AdminPage() {
 
   async function ripristinaFattura(id) {
     const conferma = window.confirm(
-      "Vuoi ripristinare questa fattura? Tornerà a essere conteggiata nel fatturato e nello stipendio."
+      "Vuoi ripristinare questa fattura?"
     );
 
     if (!conferma) return;
@@ -422,9 +394,9 @@ export default function AdminPage() {
     }
   }
 
-  // ============================================
-  // FORMATTAZIONE
-  // ============================================
+  // ==================================================
+  // UTILITY
+  // ==================================================
 
   function formattaSoldi(numero) {
     return new Intl.NumberFormat("it-IT", {
@@ -450,29 +422,21 @@ export default function AdminPage() {
     }
 
     const nome =
-      `${dipendente.nome || ""} ${
-        dipendente.cognome || ""
-      }`.trim();
+      `${dipendente.nome || ""} ${dipendente.cognome || ""}`.trim();
 
     return nome || dipendente.username || "Dipendente";
   }
 
-  // ============================================
+  // ==================================================
   // LOADING
-  // ============================================
+  // ==================================================
 
   if (loading) {
     return (
       <main className="page">
         <div>
           <h2>ARMERIA 200</h2>
-
-          <p
-            style={{
-              color: "#777",
-              marginTop: "10px",
-            }}
-          >
+          <p style={{ color: "#777", marginTop: "10px" }}>
             Caricamento pannello admin...
           </p>
         </div>
@@ -484,36 +448,31 @@ export default function AdminPage() {
     return null;
   }
 
-  // ============================================
+  // ==================================================
   // TOTALI
-  // ============================================
+  // ==================================================
 
   const fatturatoTotale = dipendenti.reduce(
-    (totale, dipendente) =>
-      totale + Number(dipendente.fatturato || 0),
+    (totale, d) =>
+      totale + Number(d.fatturato || 0),
     0
   );
 
   const stipendiTotali = dipendenti.reduce(
-    (totale, dipendente) =>
-      totale + Number(dipendente.stipendio || 0),
+    (totale, d) =>
+      totale + Number(d.stipendio || 0),
     0
   );
 
   const numeroFatture = dipendenti.reduce(
-    (totale, dipendente) =>
-      totale + Number(dipendente.numero_fatture || 0),
+    (totale, d) =>
+      totale + Number(d.numero_fatture || 0),
     0
   );
 
   const numeroDipendenti = dipendenti.filter(
-    (dipendente) =>
-      dipendente.ruolo === "dipendente"
+    (d) => d.ruolo === "dipendente"
   ).length;
-
-  // ============================================
-  // PAGINA
-  // ============================================
 
   return (
     <main
@@ -554,7 +513,7 @@ export default function AdminPage() {
             </h1>
 
             <p className="subtitle">
-              Gestione dipendenti, stipendi e fatture
+              Gestione dipendenti, ruoli, stipendi e fatture
             </p>
           </div>
 
@@ -573,9 +532,7 @@ export default function AdminPage() {
         {errore && (
           <div
             className="error-message"
-            style={{
-              marginBottom: "20px",
-            }}
+            style={{ marginBottom: "20px" }}
           >
             {errore}
           </div>
@@ -584,9 +541,7 @@ export default function AdminPage() {
         {successo && (
           <div
             className="success-message"
-            style={{
-              marginBottom: "20px",
-            }}
+            style={{ marginBottom: "20px" }}
           >
             {successo}
           </div>
@@ -634,11 +589,7 @@ export default function AdminPage() {
               "1px solid rgba(139,30,30,.35)",
           }}
         >
-          <div
-            style={{
-              marginBottom: "25px",
-            }}
-          >
+          <div style={{ marginBottom: "25px" }}>
             <div
               style={{
                 color: "#c42a2a",
@@ -648,7 +599,7 @@ export default function AdminPage() {
                 marginBottom: "7px",
               }}
             >
-              NUOVO ACCOUNT
+              NUOVA ASSUNZIONE
             </div>
 
             <h2
@@ -659,17 +610,6 @@ export default function AdminPage() {
             >
               Crea dipendente
             </h2>
-
-            <p
-              style={{
-                color: "#777",
-                fontSize: "13px",
-                marginTop: "7px",
-              }}
-            >
-              Crea username, password e percentuale
-              stipendio del nuovo dipendente.
-            </p>
           </div>
 
           <form onSubmit={creaDipendente}>
@@ -677,7 +617,7 @@ export default function AdminPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "repeat(auto-fit, minmax(200px, 1fr))",
+                  "repeat(auto-fit, minmax(190px, 1fr))",
                 gap: "15px",
               }}
             >
@@ -725,8 +665,6 @@ export default function AdminPage() {
                       e.target.value
                     )
                   }
-                  placeholder="es. clarissa"
-                  autoComplete="off"
                   required
                 />
               </div>
@@ -736,6 +674,7 @@ export default function AdminPage() {
 
                 <input
                   type="password"
+                  minLength={6}
                   value={nuovoDipendente.password}
                   onChange={(e) =>
                     modificaNuovoDipendente(
@@ -743,67 +682,84 @@ export default function AdminPage() {
                       e.target.value
                     )
                   }
-                  placeholder="Minimo 6 caratteri"
-                  autoComplete="new-password"
-                  minLength={6}
                   required
                 />
               </div>
 
-              <div className="form-group">
-                <label>% Stipendio</label>
+              {/* TENDINA RUOLO */}
 
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={
-                    nuovoDipendente.percentuale_stipendio
-                  }
+              <div className="form-group">
+                <label>Ruolo</label>
+
+                <select
+                  value={nuovoDipendente.grado}
                   onChange={(e) =>
                     modificaNuovoDipendente(
-                      "percentuale_stipendio",
+                      "grado",
                       e.target.value
                     )
                   }
-                  required
-                />
+                >
+                  <option value="Dipendente">
+                    Dipendente — 20%
+                  </option>
+
+                  <option value="Armaiolo">
+                    Armaiolo — 25%
+                  </option>
+
+                  <option value="Vice-Direttore">
+                    Vice-Direttore — 30%
+                  </option>
+
+                  <option value="Direttore">
+                    Direttore — 40%
+                  </option>
+
+                  <option value="Proprietario">
+                    Proprietario — 45%
+                  </option>
+                </select>
               </div>
+            </div>
+
+            <div
+              style={{
+                color: "#777",
+                fontSize: "13px",
+                marginBottom: "18px",
+              }}
+            >
+              Percentuale assegnata automaticamente:{" "}
+              <strong style={{ color: "#c42a2a" }}>
+                {GRADI[nuovoDipendente.grado]}%
+              </strong>
             </div>
 
             <button
               type="submit"
               className="btn btn-primary"
               disabled={creazioneDipendente}
-              style={{
-                marginTop: "5px",
-              }}
             >
               {creazioneDipendente
                 ? "Creazione..."
-                : "Crea dipendente"}
+                : "Assumi dipendente"}
             </button>
           </form>
         </div>
 
-        {/* ELENCO DIPENDENTI */}
+        {/* DIPENDENTI */}
 
-        <div
+        <h2
           style={{
+            fontSize: "20px",
+            textTransform: "uppercase",
+            letterSpacing: "2px",
             marginBottom: "15px",
           }}
         >
-          <h2
-            style={{
-              fontSize: "20px",
-              textTransform: "uppercase",
-              letterSpacing: "2px",
-            }}
-          >
-            Dipendenti
-          </h2>
-        </div>
+          Personale
+        </h2>
 
         <div
           style={{
@@ -847,10 +803,19 @@ export default function AdminPage() {
                       marginTop: "5px",
                     }}
                   >
-                    @{dipendente.username || "utente"} •{" "}
-                    {dipendente.ruolo === "admin"
-                      ? "Amministratore"
-                      : "Dipendente"}
+                    @{dipendente.username || "utente"}
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#c42a2a",
+                      fontWeight: "800",
+                      fontSize: "13px",
+                      marginTop: "7px",
+                    }}
+                  >
+                    {dipendente.grado} —{" "}
+                    {dipendente.percentuale_stipendio}%
                   </div>
 
                   {!dipendente.attivo && (
@@ -887,59 +852,58 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div
-                style={{
-                  borderTop: "1px solid #242424",
-                  marginTop: "20px",
-                  paddingTop: "20px",
-                  display: "flex",
-                  alignItems: "flex-end",
-                  gap: "12px",
-                  flexWrap: "wrap",
-                }}
-              >
+              {/* CAMBIO RUOLO */}
+
+              {dipendente.ruolo !== "admin" && (
                 <div
                   style={{
-                    width: "180px",
+                    borderTop: "1px solid #242424",
+                    marginTop: "20px",
+                    paddingTop: "20px",
+                    display: "flex",
+                    alignItems: "flex-end",
+                    gap: "12px",
+                    flexWrap: "wrap",
                   }}
                 >
-                  <label>
-                    % Stipendio
-                  </label>
+                  <div style={{ width: "230px" }}>
+                    <label>Ruolo lavorativo</label>
 
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={
-                      dipendente.percentuale_stipendio
-                    }
-                    onChange={(e) =>
-                      cambiaPercentualeLocale(
-                        dipendente.id,
-                        e.target.value
-                      )
-                    }
-                    style={{
-                      marginTop: "7px",
-                    }}
-                  />
-                </div>
+                    <select
+                      value={dipendente.grado}
+                      disabled={
+                        salvataggio === dipendente.id
+                      }
+                      onChange={(e) =>
+                        cambiaGrado(
+                          dipendente,
+                          e.target.value
+                        )
+                      }
+                      style={{ marginTop: "7px" }}
+                    >
+                      <option value="Dipendente">
+                        Dipendente — 20%
+                      </option>
 
-                <button
-                  className="btn btn-primary"
-                  disabled={
-                    salvataggio === dipendente.id
-                  }
-                  onClick={() =>
-                    salvaPercentuale(dipendente)
-                  }
-                >
-                  Salva percentuale
-                </button>
+                      <option value="Armaiolo">
+                        Armaiolo — 25%
+                      </option>
 
-                {dipendente.ruolo !== "admin" && (
+                      <option value="Vice-Direttore">
+                        Vice-Direttore — 30%
+                      </option>
+
+                      <option value="Direttore">
+                        Direttore — 40%
+                      </option>
+
+                      <option value="Proprietario">
+                        Proprietario — 45%
+                      </option>
+                    </select>
+                  </div>
+
                   <button
                     className="btn btn-dark"
                     disabled={
@@ -953,29 +917,24 @@ export default function AdminPage() {
                       ? "Disattiva"
                       : "Riattiva"}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
 
-        {/* ULTIME FATTURE */}
+        {/* FATTURE */}
 
-        <div
+        <h2
           style={{
+            fontSize: "20px",
+            textTransform: "uppercase",
+            letterSpacing: "2px",
             marginBottom: "15px",
           }}
         >
-          <h2
-            style={{
-              fontSize: "20px",
-              textTransform: "uppercase",
-              letterSpacing: "2px",
-            }}
-          >
-            Ultime fatture
-          </h2>
-        </div>
+          Ultime fatture
+        </h2>
 
         <div
           style={{
@@ -1016,9 +975,7 @@ export default function AdminPage() {
                         fontWeight: "800",
                       }}
                     >
-                      {formattaSoldi(
-                        fattura.totale
-                      )}
+                      {formattaSoldi(fattura.totale)}
                     </div>
 
                     <div
@@ -1031,6 +988,8 @@ export default function AdminPage() {
                       {nomeDipendente(
                         fattura.profiles
                       )}
+                      {" • "}
+                      {fattura.profiles?.grado}
                       {" • "}
                       {formattaData(
                         fattura.created_at
@@ -1091,10 +1050,6 @@ export default function AdminPage() {
     </main>
   );
 }
-
-// ============================================
-// COMPONENTI
-// ============================================
 
 function StatCard({ titolo, valore }) {
   return (
