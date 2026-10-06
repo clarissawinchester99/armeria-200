@@ -21,6 +21,7 @@ export default function AdminPage() {
 
   const [dipendenti, setDipendenti] = useState([]);
   const [fatture, setFatture] = useState([]);
+  const [imports, setImports] = useState([]);
 
   const [creazione, setCreazione] = useState(false);
   const [salvataggio, setSalvataggio] = useState(null);
@@ -52,12 +53,14 @@ export default function AdminPage() {
         return;
       }
 
-      const { data: profilo, error: profiloError } =
-        await supabase
-          .from("profiles")
-          .select("id, ruolo, attivo")
-          .eq("id", user.id)
-          .single();
+      const {
+        data: profilo,
+        error: profiloError,
+      } = await supabase
+        .from("profiles")
+        .select("id, ruolo, attivo")
+        .eq("id", user.id)
+        .single();
 
       if (
         profiloError ||
@@ -72,6 +75,7 @@ export default function AdminPage() {
       await Promise.all([
         caricaDipendenti(),
         caricaFatture(),
+        caricaImports(),
       ]);
     } catch (error) {
       console.error(error);
@@ -84,38 +88,46 @@ export default function AdminPage() {
     }
   }
 
+  // ==============================
+  // DIPENDENTI
+  // ==============================
+
   async function caricaDipendenti() {
-    const { data: profili, error: profiliError } =
-      await supabase
-        .from("profiles")
-        .select(`
-          id,
-          nome,
-          cognome,
-          username,
-          ruolo,
-          grado,
-          percentuale_stipendio,
-          attivo,
-          created_at
-        `)
-        .order("created_at", {
-          ascending: true,
-        });
+    const {
+      data: profili,
+      error: profiliError,
+    } = await supabase
+      .from("profiles")
+      .select(`
+        id,
+        nome,
+        cognome,
+        username,
+        ruolo,
+        grado,
+        percentuale_stipendio,
+        attivo,
+        created_at
+      `)
+      .order("created_at", {
+        ascending: true,
+      });
 
     if (profiliError) {
       throw profiliError;
     }
 
-    const { data: statistiche, error: statisticheError } =
-      await supabase
-        .from("employee_stats")
-        .select(`
-          id,
-          numero_fatture,
-          fatturato,
-          stipendio
-        `);
+    const {
+      data: statistiche,
+      error: statisticheError,
+    } = await supabase
+      .from("employee_stats")
+      .select(`
+        id,
+        numero_fatture,
+        fatturato,
+        stipendio
+      `);
 
     if (statisticheError) {
       throw statisticheError;
@@ -127,21 +139,33 @@ export default function AdminPage() {
       statisticheMap[stat.id] = stat;
     });
 
-    const risultato = (profili || []).map((profilo) => ({
-      ...profilo,
-      numero_fatture: Number(
-        statisticheMap[profilo.id]?.numero_fatture || 0
-      ),
-      fatturato: Number(
-        statisticheMap[profilo.id]?.fatturato || 0
-      ),
-      stipendio: Number(
-        statisticheMap[profilo.id]?.stipendio || 0
-      ),
-    }));
+    const risultato = (profili || []).map(
+      (profilo) => ({
+        ...profilo,
+
+        numero_fatture: Number(
+          statisticheMap[profilo.id]
+            ?.numero_fatture || 0
+        ),
+
+        fatturato: Number(
+          statisticheMap[profilo.id]
+            ?.fatturato || 0
+        ),
+
+        stipendio: Number(
+          statisticheMap[profilo.id]
+            ?.stipendio || 0
+        ),
+      })
+    );
 
     setDipendenti(risultato);
   }
+
+  // ==============================
+  // FATTURE
+  // ==============================
 
   async function caricaFatture() {
     const { data, error } = await supabase
@@ -170,7 +194,39 @@ export default function AdminPage() {
     setFatture(data || []);
   }
 
-  function modificaNuovoDipendente(campo, valore) {
+  // ==============================
+  // IMPORT
+  // ==============================
+
+  async function caricaImports() {
+    const { data, error } = await supabase
+      .from("imports")
+      .select(`
+        id,
+        employee_id,
+        totale,
+        annullato,
+        created_at
+      `)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    setImports(data || []);
+  }
+
+  // ==============================
+  // CREA DIPENDENTE
+  // ==============================
+
+  function modificaNuovoDipendente(
+    campo,
+    valore
+  ) {
     setNuovoDipendente((precedente) => ({
       ...precedente,
       [campo]: valore,
@@ -207,17 +263,26 @@ export default function AdminPage() {
 
           body: JSON.stringify({
             nome: nuovoDipendente.nome.trim(),
-            cognome: nuovoDipendente.cognome.trim(),
-            username: nuovoDipendente.username
-              .trim()
-              .toLowerCase(),
-            password: nuovoDipendente.password,
-            grado: nuovoDipendente.grado,
+
+            cognome:
+              nuovoDipendente.cognome.trim(),
+
+            username:
+              nuovoDipendente.username
+                .trim()
+                .toLowerCase(),
+
+            password:
+              nuovoDipendente.password,
+
+            grado:
+              nuovoDipendente.grado,
           }),
         }
       );
 
-      const risultato = await response.json();
+      const risultato =
+        await response.json();
 
       if (!response.ok) {
         throw new Error(
@@ -251,7 +316,14 @@ export default function AdminPage() {
     }
   }
 
-  async function cambiaGrado(dipendente, nuovoGrado) {
+  // ==============================
+  // MODIFICA GRADO
+  // ==============================
+
+  async function cambiaGrado(
+    dipendente,
+    nuovoGrado
+  ) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
@@ -284,13 +356,20 @@ export default function AdminPage() {
     }
   }
 
-  async function cambiaStatoDipendente(dipendente) {
+  // ==============================
+  // ATTIVA / DISATTIVA DIPENDENTE
+  // ==============================
+
+  async function cambiaStatoDipendente(
+    dipendente
+  ) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
 
     try {
-      const nuovoStato = !dipendente.attivo;
+      const nuovoStato =
+        !dipendente.attivo;
 
       const { error } = await supabase
         .from("profiles")
@@ -321,6 +400,10 @@ export default function AdminPage() {
     }
   }
 
+  // ==============================
+  // ANNULLA FATTURA
+  // ==============================
+
   async function annullaFattura(fattura) {
     setErrore("");
     setSuccesso("");
@@ -338,7 +421,9 @@ export default function AdminPage() {
         throw error;
       }
 
-      setSuccesso("Fattura annullata correttamente.");
+      setSuccesso(
+        "Fattura annullata correttamente."
+      );
 
       await Promise.all([
         caricaFatture(),
@@ -355,7 +440,13 @@ export default function AdminPage() {
     }
   }
 
-  async function ripristinaFattura(fattura) {
+  // ==============================
+  // RIPRISTINA FATTURA
+  // ==============================
+
+  async function ripristinaFattura(
+    fattura
+  ) {
     setErrore("");
     setSuccesso("");
     setAzioneFattura(fattura.id);
@@ -372,7 +463,9 @@ export default function AdminPage() {
         throw error;
       }
 
-      setSuccesso("Fattura ripristinata correttamente.");
+      setSuccesso(
+        "Fattura ripristinata correttamente."
+      );
 
       await Promise.all([
         caricaFatture(),
@@ -389,6 +482,10 @@ export default function AdminPage() {
     }
   }
 
+  // ==============================
+  // FORMATTAZIONE
+  // ==============================
+
   function formattaSoldi(numero) {
     return new Intl.NumberFormat("it-IT", {
       style: "currency",
@@ -400,30 +497,59 @@ export default function AdminPage() {
   function formattaData(data) {
     if (!data) return "";
 
-    return new Intl.DateTimeFormat("it-IT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(data));
+    return new Intl.DateTimeFormat(
+      "it-IT",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    ).format(new Date(data));
   }
+
+  // ==============================
+  // TOTALI
+  // ==============================
 
   const fattureValide = fatture.filter(
     (fattura) => !fattura.annullata
   );
 
-  const fatturatoTotale = fattureValide.reduce(
-    (totale, fattura) =>
-      totale + Number(fattura.totale || 0),
-    0
+  const fatturatoTotale =
+    fattureValide.reduce(
+      (totale, fattura) =>
+        totale +
+        Number(fattura.totale || 0),
+      0
+    );
+
+  const stipendiTotali =
+    dipendenti.reduce(
+      (totale, dipendente) =>
+        totale +
+        Number(
+          dipendente.stipendio || 0
+        ),
+      0
+    );
+
+  const importValidi = imports.filter(
+    (ordine) => !ordine.annullato
   );
 
-  const stipendiTotali = dipendenti.reduce(
-    (totale, dipendente) =>
-      totale + Number(dipendente.stipendio || 0),
-    0
-  );
+  const totaleImport =
+    importValidi.reduce(
+      (totale, ordine) =>
+        totale +
+        Number(ordine.totale || 0),
+      0
+    );
+
+  // ==============================
+  // LOADING
+  // ==============================
 
   if (loading) {
     return (
@@ -462,7 +588,8 @@ export default function AdminPage() {
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent:
+              "space-between",
             alignItems: "center",
             gap: "20px",
             flexWrap: "wrap",
@@ -501,6 +628,8 @@ export default function AdminPage() {
           </button>
         </div>
 
+        {/* MESSAGGI */}
+
         {errore && (
           <div
             className="error-message"
@@ -529,14 +658,16 @@ export default function AdminPage() {
           style={{
             display: "grid",
             gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
+              "repeat(auto-fit, minmax(180px, 1fr))",
             gap: "15px",
             marginBottom: "35px",
           }}
         >
           <StatCard
             titolo="Fatturato totale"
-            valore={formattaSoldi(fatturatoTotale)}
+            valore={formattaSoldi(
+              fatturatoTotale
+            )}
           />
 
           <StatCard
@@ -546,13 +677,96 @@ export default function AdminPage() {
 
           <StatCard
             titolo="Stipendi maturati"
-            valore={formattaSoldi(stipendiTotali)}
+            valore={formattaSoldi(
+              stipendiTotali
+            )}
           />
 
           <StatCard
             titolo="Personale"
             valore={dipendenti.length}
           />
+
+          <StatCard
+            titolo="Import validi"
+            valore={importValidi.length}
+          />
+
+          <StatCard
+            titolo="Totale Import"
+            valore={formattaSoldi(
+              totaleImport
+            )}
+          />
+        </div>
+
+        {/* GESTIONE IMPORT */}
+
+        <div
+          className="card"
+          style={{
+            marginBottom: "20px",
+            border:
+              "1px solid rgba(139,30,30,.35)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent:
+                "space-between",
+              alignItems: "center",
+              gap: "20px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: "#c42a2a",
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  letterSpacing: "3px",
+                  marginBottom: "7px",
+                }}
+              >
+                ORDINI MATERIALI
+              </div>
+
+              <h2
+                style={{
+                  fontSize: "22px",
+                  textTransform:
+                    "uppercase",
+                }}
+              >
+                Gestione Import
+              </h2>
+
+              <p
+                style={{
+                  color: "#777",
+                  fontSize: "13px",
+                  marginTop: "7px",
+                }}
+              >
+                Visualizza, controlla e
+                gestisci gli ordini dei
+                materiali dell'Armeria.
+              </p>
+            </div>
+
+            <button
+              className="btn btn-primary"
+              onClick={() =>
+                router.push(
+                  "/storico-import"
+                )
+              }
+            >
+              Storico Import
+            </button>
+          </div>
         </div>
 
         {/* GESTIONE CATALOGO */}
@@ -568,7 +782,8 @@ export default function AdminPage() {
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent:
+                "space-between",
               alignItems: "center",
               gap: "20px",
               flexWrap: "wrap",
@@ -590,7 +805,8 @@ export default function AdminPage() {
               <h2
                 style={{
                   fontSize: "22px",
-                  textTransform: "uppercase",
+                  textTransform:
+                    "uppercase",
                 }}
               >
                 Gestione Prodotti
@@ -603,15 +819,18 @@ export default function AdminPage() {
                   marginTop: "7px",
                 }}
               >
-                Aggiungi prodotti, modifica prezzi e
-                gestisci gli articoli disponibili.
+                Aggiungi prodotti, modifica
+                prezzi e gestisci gli
+                articoli disponibili.
               </p>
             </div>
 
             <button
               className="btn btn-primary"
               onClick={() =>
-                router.push("/admin/catalogo")
+                router.push(
+                  "/admin/catalogo"
+                )
               }
             >
               Gestisci Catalogo
@@ -647,7 +866,9 @@ export default function AdminPage() {
             <h2>Assumi dipendente</h2>
           </div>
 
-          <form onSubmit={creaDipendente}>
+          <form
+            onSubmit={creaDipendente}
+          >
             <div
               style={{
                 display: "grid",
@@ -661,7 +882,9 @@ export default function AdminPage() {
 
                 <input
                   type="text"
-                  value={nuovoDipendente.nome}
+                  value={
+                    nuovoDipendente.nome
+                  }
                   onChange={(e) =>
                     modificaNuovoDipendente(
                       "nome",
@@ -677,7 +900,9 @@ export default function AdminPage() {
 
                 <input
                   type="text"
-                  value={nuovoDipendente.cognome}
+                  value={
+                    nuovoDipendente.cognome
+                  }
                   onChange={(e) =>
                     modificaNuovoDipendente(
                       "cognome",
@@ -693,7 +918,9 @@ export default function AdminPage() {
 
                 <input
                   type="text"
-                  value={nuovoDipendente.username}
+                  value={
+                    nuovoDipendente.username
+                  }
                   onChange={(e) =>
                     modificaNuovoDipendente(
                       "username",
@@ -709,7 +936,9 @@ export default function AdminPage() {
 
                 <input
                   type="password"
-                  value={nuovoDipendente.password}
+                  value={
+                    nuovoDipendente.password
+                  }
                   onChange={(e) =>
                     modificaNuovoDipendente(
                       "password",
@@ -725,7 +954,9 @@ export default function AdminPage() {
                 <label>Grado</label>
 
                 <select
-                  value={nuovoDipendente.grado}
+                  value={
+                    nuovoDipendente.grado
+                  }
                   onChange={(e) =>
                     modificaNuovoDipendente(
                       "grado",
@@ -733,13 +964,19 @@ export default function AdminPage() {
                     )
                   }
                 >
-                  {Object.entries(GRADI).map(
-                    ([grado, percentuale]) => (
+                  {Object.entries(
+                    GRADI
+                  ).map(
+                    ([
+                      grado,
+                      percentuale,
+                    ]) => (
                       <option
                         key={grado}
                         value={grado}
                       >
-                        {grado} — {percentuale}%
+                        {grado} —{" "}
+                        {percentuale}%
                       </option>
                     )
                   )}
@@ -784,192 +1021,238 @@ export default function AdminPage() {
               gap: "15px",
             }}
           >
-            {dipendenti.map((dipendente) => (
-              <div
-                className="card"
-                key={dipendente.id}
-                style={{
-                  opacity:
-                    dipendente.attivo ? 1 : 0.55,
-                }}
-              >
+            {dipendenti.map(
+              (dipendente) => (
                 <div
+                  className="card"
+                  key={dipendente.id}
                   style={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    gap: "15px",
-                    marginBottom: "15px",
+                    opacity:
+                      dipendente.attivo
+                        ? 1
+                        : 0.55,
                   }}
                 >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "18px",
-                        fontWeight: "900",
-                      }}
-                    >
-                      {dipendente.nome}{" "}
-                      {dipendente.cognome}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent:
+                        "space-between",
+                      gap: "15px",
+                      marginBottom:
+                        "15px",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize:
+                            "18px",
+                          fontWeight:
+                            "900",
+                        }}
+                      >
+                        {dipendente.nome}{" "}
+                        {
+                          dipendente.cognome
+                        }
+                      </div>
+
+                      <div
+                        style={{
+                          color: "#777",
+                          fontSize:
+                            "12px",
+                          marginTop:
+                            "4px",
+                        }}
+                      >
+                        @
+                        {dipendente.username ||
+                          "—"}
+                      </div>
                     </div>
 
                     <div
                       style={{
-                        color: "#777",
-                        fontSize: "12px",
-                        marginTop: "4px",
+                        color:
+                          dipendente.attivo
+                            ? "#c42a2a"
+                            : "#777",
+                        fontSize: "11px",
+                        fontWeight:
+                          "900",
                       }}
                     >
-                      @{dipendente.username || "—"}
+                      {dipendente.attivo
+                        ? "ATTIVO"
+                        : "DISATTIVATO"}
                     </div>
                   </div>
 
                   <div
                     style={{
-                      color: dipendente.attivo
-                        ? "#c42a2a"
-                        : "#777",
-                      fontSize: "11px",
-                      fontWeight: "900",
+                      color: "#aaa",
+                      fontSize: "13px",
+                      lineHeight: "1.8",
+                      marginBottom:
+                        "15px",
                     }}
                   >
-                    {dipendente.attivo
-                      ? "ATTIVO"
-                      : "DISATTIVATO"}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    color: "#aaa",
-                    fontSize: "13px",
-                    lineHeight: "1.8",
-                    marginBottom: "15px",
-                  }}
-                >
-                  <div>
-                    Grado:{" "}
-                    <strong
-                      style={{
-                        color: "#fff",
-                      }}
-                    >
-                      {dipendente.grado}
-                    </strong>
-                  </div>
-
-                  <div>
-                    Percentuale:{" "}
-                    <strong
-                      style={{
-                        color: "#fff",
-                      }}
-                    >
-                      {
-                        dipendente.percentuale_stipendio
-                      }
-                      %
-                    </strong>
-                  </div>
-
-                  <div>
-                    Fatture:{" "}
-                    <strong
-                      style={{
-                        color: "#fff",
-                      }}
-                    >
-                      {dipendente.numero_fatture}
-                    </strong>
-                  </div>
-
-                  <div>
-                    Fatturato:{" "}
-                    <strong
-                      style={{
-                        color: "#fff",
-                      }}
-                    >
-                      {formattaSoldi(
-                        dipendente.fatturato
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    Stipendio:{" "}
-                    <strong
-                      style={{
-                        color: "#fff",
-                      }}
-                    >
-                      {formattaSoldi(
-                        dipendente.stipendio
-                      )}
-                    </strong>
-                  </div>
-                </div>
-
-                {dipendente.ruolo !== "admin" ? (
-                  <>
-                    <div className="form-group">
-                      <label>Grado</label>
-
-                      <select
-                        value={dipendente.grado}
-                        disabled={
-                          salvataggio === dipendente.id
+                    <div>
+                      Grado:{" "}
+                      <strong
+                        style={{
+                          color: "#fff",
+                        }}
+                      >
+                        {
+                          dipendente.grado
                         }
-                        onChange={(e) =>
-                          cambiaGrado(
-                            dipendente,
-                            e.target.value
+                      </strong>
+                    </div>
+
+                    <div>
+                      Percentuale:{" "}
+                      <strong
+                        style={{
+                          color: "#fff",
+                        }}
+                      >
+                        {
+                          dipendente.percentuale_stipendio
+                        }
+                        %
+                      </strong>
+                    </div>
+
+                    <div>
+                      Fatture:{" "}
+                      <strong
+                        style={{
+                          color: "#fff",
+                        }}
+                      >
+                        {
+                          dipendente.numero_fatture
+                        }
+                      </strong>
+                    </div>
+
+                    <div>
+                      Fatturato:{" "}
+                      <strong
+                        style={{
+                          color: "#fff",
+                        }}
+                      >
+                        {formattaSoldi(
+                          dipendente.fatturato
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      Stipendio:{" "}
+                      <strong
+                        style={{
+                          color: "#fff",
+                        }}
+                      >
+                        {formattaSoldi(
+                          dipendente.stipendio
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {dipendente.ruolo !==
+                  "admin" ? (
+                    <>
+                      <div className="form-group">
+                        <label>
+                          Grado
+                        </label>
+
+                        <select
+                          value={
+                            dipendente.grado
+                          }
+                          disabled={
+                            salvataggio ===
+                            dipendente.id
+                          }
+                          onChange={(e) =>
+                            cambiaGrado(
+                              dipendente,
+                              e.target
+                                .value
+                            )
+                          }
+                        >
+                          {Object.entries(
+                            GRADI
+                          ).map(
+                            ([
+                              grado,
+                              percentuale,
+                            ]) => (
+                              <option
+                                key={
+                                  grado
+                                }
+                                value={
+                                  grado
+                                }
+                              >
+                                {grado} —{" "}
+                                {
+                                  percentuale
+                                }
+                                %
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <button
+                        className="btn btn-dark"
+                        disabled={
+                          salvataggio ===
+                          dipendente.id
+                        }
+                        onClick={() =>
+                          cambiaStatoDipendente(
+                            dipendente
                           )
                         }
                       >
-                        {Object.entries(GRADI).map(
-                          ([grado, percentuale]) => (
-                            <option
-                              key={grado}
-                              value={grado}
-                            >
-                              {grado} — {percentuale}%
-                            </option>
-                          )
-                        )}
-                      </select>
-                    </div>
-
-                    <button
-                      className="btn btn-dark"
-                      disabled={
-                        salvataggio === dipendente.id
-                      }
-                      onClick={() =>
-                        cambiaStatoDipendente(
-                          dipendente
-                        )
-                      }
+                        {dipendente.attivo
+                          ? "Disattiva Dipendente"
+                          : "Riattiva Dipendente"}
+                      </button>
+                    </>
+                  ) : (
+                    <div
+                      style={{
+                        color:
+                          "#c42a2a",
+                        fontSize:
+                          "11px",
+                        fontWeight:
+                          "900",
+                        letterSpacing:
+                          "2px",
+                      }}
                     >
-                      {dipendente.attivo
-                        ? "Disattiva Dipendente"
-                        : "Riattiva Dipendente"}
-                    </button>
-                  </>
-                ) : (
-                  <div
-                    style={{
-                      color: "#c42a2a",
-                      fontSize: "11px",
-                      fontWeight: "900",
-                      letterSpacing: "2px",
-                    }}
-                  >
-                    ACCOUNT AMMINISTRATORE
-                  </div>
-                )}
-              </div>
-            ))}
+                      ACCOUNT
+                      AMMINISTRATORE
+                    </div>
+                  )}
+                </div>
+              )
+            )}
           </div>
         </div>
 
@@ -993,7 +1276,8 @@ export default function AdminPage() {
                   color: "#777",
                 }}
               >
-                Nessuna fattura registrata.
+                Nessuna fattura
+                registrata.
               </p>
             </div>
           ) : (
@@ -1004,127 +1288,154 @@ export default function AdminPage() {
                 gap: "12px",
               }}
             >
-              {fatture.map((fattura) => {
-                const nome =
-                  `${fattura.profiles?.nome || ""} ${
-                    fattura.profiles?.cognome || ""
-                  }`.trim();
+              {fatture.map(
+                (fattura) => {
+                  const nome =
+                    `${
+                      fattura.profiles
+                        ?.nome || ""
+                    } ${
+                      fattura.profiles
+                        ?.cognome || ""
+                    }`.trim();
 
-                return (
-                  <div
-                    className="card"
-                    key={fattura.id}
-                    style={{
-                      opacity:
-                        fattura.annullata
-                          ? 0.55
-                          : 1,
-                    }}
-                  >
+                  return (
                     <div
+                      className="card"
+                      key={fattura.id}
                       style={{
-                        display: "flex",
-                        justifyContent:
-                          "space-between",
-                        alignItems: "center",
-                        gap: "20px",
-                        flexWrap: "wrap",
+                        opacity:
+                          fattura.annullata
+                            ? 0.55
+                            : 1,
                       }}
                     >
-                      <div>
-                        <div
-                          style={{
-                            fontWeight: "900",
-                            fontSize: "16px",
-                          }}
-                        >
-                          {nome || "Dipendente"}
-                        </div>
-
-                        <div
-                          style={{
-                            color: "#777",
-                            fontSize: "12px",
-                            marginTop: "4px",
-                          }}
-                        >
-                          {fattura.profiles?.grado ||
-                            "Dipendente"}{" "}
-                          •{" "}
-                          {formattaData(
-                            fattura.created_at
-                          )}
-                        </div>
-
-                        {fattura.annullata && (
-                          <div
-                            style={{
-                              color: "#c42a2a",
-                              fontWeight: "900",
-                              fontSize: "11px",
-                              marginTop: "7px",
-                            }}
-                          >
-                            FATTURA ANNULLATA
-                          </div>
-                        )}
-                      </div>
-
                       <div
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "15px",
-                          flexWrap: "wrap",
+                          display:
+                            "flex",
+                          justifyContent:
+                            "space-between",
+                          alignItems:
+                            "center",
+                          gap: "20px",
+                          flexWrap:
+                            "wrap",
                         }}
                       >
-                        <div
-                          style={{
-                            fontSize: "20px",
-                            fontWeight: "900",
-                          }}
-                        >
-                          {formattaSoldi(
-                            fattura.totale
+                        <div>
+                          <div
+                            style={{
+                              fontWeight:
+                                "900",
+                              fontSize:
+                                "16px",
+                            }}
+                          >
+                            {nome ||
+                              "Dipendente"}
+                          </div>
+
+                          <div
+                            style={{
+                              color:
+                                "#777",
+                              fontSize:
+                                "12px",
+                              marginTop:
+                                "4px",
+                            }}
+                          >
+                            {fattura
+                              .profiles
+                              ?.grado ||
+                              "Dipendente"}{" "}
+                            •{" "}
+                            {formattaData(
+                              fattura.created_at
+                            )}
+                          </div>
+
+                          {fattura.annullata && (
+                            <div
+                              style={{
+                                color:
+                                  "#c42a2a",
+                                fontWeight:
+                                  "900",
+                                fontSize:
+                                  "11px",
+                                marginTop:
+                                  "7px",
+                              }}
+                            >
+                              FATTURA
+                              ANNULLATA
+                            </div>
                           )}
                         </div>
 
-                        {fattura.annullata ? (
-                          <button
-                            className="btn btn-dark"
-                            disabled={
-                              azioneFattura ===
-                              fattura.id
-                            }
-                            onClick={() =>
-                              ripristinaFattura(
-                                fattura
-                              )
-                            }
+                        <div
+                          style={{
+                            display:
+                              "flex",
+                            alignItems:
+                              "center",
+                            gap: "15px",
+                            flexWrap:
+                              "wrap",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize:
+                                "20px",
+                              fontWeight:
+                                "900",
+                            }}
                           >
-                            Ripristina
-                          </button>
-                        ) : (
-                          <button
-                            className="btn btn-dark"
-                            disabled={
-                              azioneFattura ===
-                              fattura.id
-                            }
-                            onClick={() =>
-                              annullaFattura(
-                                fattura
-                              )
-                            }
-                          >
-                            Annulla
-                          </button>
-                        )}
+                            {formattaSoldi(
+                              fattura.totale
+                            )}
+                          </div>
+
+                          {fattura.annullata ? (
+                            <button
+                              className="btn btn-dark"
+                              disabled={
+                                azioneFattura ===
+                                fattura.id
+                              }
+                              onClick={() =>
+                                ripristinaFattura(
+                                  fattura
+                                )
+                              }
+                            >
+                              Ripristina
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn-dark"
+                              disabled={
+                                azioneFattura ===
+                                fattura.id
+                              }
+                              onClick={() =>
+                                annullaFattura(
+                                  fattura
+                                )
+                              }
+                            >
+                              Annulla
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
             </div>
           )}
         </div>
@@ -1133,7 +1444,10 @@ export default function AdminPage() {
   );
 }
 
-function StatCard({ titolo, valore }) {
+function StatCard({
+  titolo,
+  valore,
+}) {
   return (
     <div className="card">
       <div
