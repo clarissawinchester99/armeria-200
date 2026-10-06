@@ -18,6 +18,18 @@ export default function AdminPage() {
   const [salvataggio, setSalvataggio] = useState(null);
   const [operazioneFattura, setOperazioneFattura] = useState(null);
 
+  // NUOVO DIPENDENTE
+  const [nuovoDipendente, setNuovoDipendente] = useState({
+    nome: "",
+    cognome: "",
+    username: "",
+    password: "",
+    percentuale_stipendio: 0,
+  });
+
+  const [creazioneDipendente, setCreazioneDipendente] =
+    useState(false);
+
   useEffect(() => {
     caricaAdmin();
   }, []);
@@ -36,8 +48,7 @@ export default function AdminPage() {
         return;
       }
 
-      // PROFILO UTENTE
-
+      // PROFILO ADMIN
       const { data: profiloData, error: profiloError } =
         await supabase
           .from("profiles")
@@ -49,15 +60,17 @@ export default function AdminPage() {
         throw profiloError || new Error("Profilo non trovato");
       }
 
-      if (profiloData.ruolo !== "admin") {
+      if (
+        profiloData.ruolo !== "admin" ||
+        !profiloData.attivo
+      ) {
         router.replace("/dashboard");
         return;
       }
 
       setProfilo(profiloData);
 
-      // STATISTICHE DIPENDENTI
-
+      // STATISTICHE
       const { data: statsData, error: statsError } =
         await supabase
           .from("employee_stats")
@@ -68,8 +81,7 @@ export default function AdminPage() {
         throw statsError;
       }
 
-      // RECUPERIAMO ANCHE USERNAME E STATO ATTIVO
-
+      // PROFILI
       const { data: profilesData, error: profilesError } =
         await supabase
           .from("profiles")
@@ -87,22 +99,23 @@ export default function AdminPage() {
         throw profilesError;
       }
 
-      const dipendentiCompleti = (statsData || []).map((stat) => {
-        const p = (profilesData || []).find(
-          (profilo) => profilo.id === stat.id
-        );
+      const dipendentiCompleti = (statsData || []).map(
+        (stat) => {
+          const p = (profilesData || []).find(
+            (profilo) => profilo.id === stat.id
+          );
 
-        return {
-          ...stat,
-          username: p?.username || "",
-          attivo: p?.attivo ?? true,
-        };
-      });
+          return {
+            ...stat,
+            username: p?.username || "",
+            attivo: p?.attivo ?? true,
+          };
+        }
+      );
 
       setDipendenti(dipendentiCompleti);
 
-      // FATTURE
-
+      // ULTIME FATTURE
       const { data: fattureData, error: fattureError } =
         await supabase
           .from("invoices")
@@ -139,32 +152,92 @@ export default function AdminPage() {
     }
   }
 
-  function formattaSoldi(numero) {
-    return new Intl.NumberFormat("it-IT", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(Number(numero || 0));
+  // ============================================
+  // CREA DIPENDENTE
+  // ============================================
+
+  function modificaNuovoDipendente(campo, valore) {
+    setNuovoDipendente((precedente) => ({
+      ...precedente,
+      [campo]: valore,
+    }));
   }
 
-  function formattaData(data) {
-    return new Intl.DateTimeFormat("it-IT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(data));
+  async function creaDipendente(e) {
+    e.preventDefault();
+
+    setErrore("");
+    setSuccesso("");
+    setCreazioneDipendente(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("Sessione non valida.");
+      }
+
+      const response = await fetch(
+        "/api/admin/create-user",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+
+          body: JSON.stringify({
+            nome: nuovoDipendente.nome,
+            cognome: nuovoDipendente.cognome,
+            username: nuovoDipendente.username,
+            password: nuovoDipendente.password,
+            percentuale_stipendio: Number(
+              nuovoDipendente.percentuale_stipendio || 0
+            ),
+          }),
+        }
+      );
+
+      const risultato = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          risultato.error ||
+            "Errore durante la creazione del dipendente."
+        );
+      }
+
+      setSuccesso(
+        `Dipendente ${nuovoDipendente.nome} ${nuovoDipendente.cognome} creato correttamente.`
+      );
+
+      setNuovoDipendente({
+        nome: "",
+        cognome: "",
+        username: "",
+        password: "",
+        percentuale_stipendio: 0,
+      });
+
+      await caricaAdmin();
+    } catch (error) {
+      console.error("Errore creazione dipendente:", error);
+
+      setErrore(
+        error.message ||
+          "Errore durante la creazione del dipendente."
+      );
+    } finally {
+      setCreazioneDipendente(false);
+    }
   }
 
-  function nomeDipendente(profilo) {
-    if (!profilo) return "Dipendente";
-
-    const nome =
-      `${profilo.nome || ""} ${profilo.cognome || ""}`.trim();
-
-    return nome || profilo.username || "Dipendente";
-  }
+  // ============================================
+  // PERCENTUALE STIPENDIO
+  // ============================================
 
   function cambiaPercentualeLocale(id, valore) {
     let percentuale = Number(valore);
@@ -202,8 +275,9 @@ export default function AdminPage() {
       const { error } = await supabase
         .from("profiles")
         .update({
-          percentuale_stipendio:
-            Number(dipendente.percentuale_stipendio || 0),
+          percentuale_stipendio: Number(
+            dipendente.percentuale_stipendio || 0
+          ),
         })
         .eq("id", dipendente.id);
 
@@ -228,6 +302,10 @@ export default function AdminPage() {
       setSalvataggio(null);
     }
   }
+
+  // ============================================
+  // ATTIVA / DISATTIVA DIPENDENTE
+  // ============================================
 
   async function cambiaStato(dipendente) {
     setErrore("");
@@ -265,6 +343,10 @@ export default function AdminPage() {
       setSalvataggio(null);
     }
   }
+
+  // ============================================
+  // FATTURE
+  // ============================================
 
   async function annullaFattura(id) {
     const conferma = window.confirm(
@@ -340,6 +422,45 @@ export default function AdminPage() {
     }
   }
 
+  // ============================================
+  // FORMATTAZIONE
+  // ============================================
+
+  function formattaSoldi(numero) {
+    return new Intl.NumberFormat("it-IT", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(Number(numero || 0));
+  }
+
+  function formattaData(data) {
+    return new Intl.DateTimeFormat("it-IT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(data));
+  }
+
+  function nomeDipendente(dipendente) {
+    if (!dipendente) {
+      return "Dipendente";
+    }
+
+    const nome =
+      `${dipendente.nome || ""} ${
+        dipendente.cognome || ""
+      }`.trim();
+
+    return nome || dipendente.username || "Dipendente";
+  }
+
+  // ============================================
+  // LOADING
+  // ============================================
+
   if (loading) {
     return (
       <main className="page">
@@ -363,6 +484,10 @@ export default function AdminPage() {
     return null;
   }
 
+  // ============================================
+  // TOTALI
+  // ============================================
+
   const fatturatoTotale = dipendenti.reduce(
     (totale, dipendente) =>
       totale + Number(dipendente.fatturato || 0),
@@ -380,6 +505,15 @@ export default function AdminPage() {
       totale + Number(dipendente.numero_fatture || 0),
     0
   );
+
+  const numeroDipendenti = dipendenti.filter(
+    (dipendente) =>
+      dipendente.ruolo === "dipendente"
+  ).length;
+
+  // ============================================
+  // PAGINA
+  // ============================================
 
   return (
     <main
@@ -458,7 +592,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TOTALI AZIENDA */}
+        {/* TOTALI */}
 
         <div
           style={{
@@ -486,15 +620,174 @@ export default function AdminPage() {
 
           <StatCard
             titolo="Dipendenti"
-            valore={
-              dipendenti.filter(
-                (d) => d.ruolo === "dipendente"
-              ).length
-            }
+            valore={numeroDipendenti}
           />
         </div>
 
-        {/* DIPENDENTI */}
+        {/* CREA DIPENDENTE */}
+
+        <div
+          className="card"
+          style={{
+            marginBottom: "40px",
+            border:
+              "1px solid rgba(139,30,30,.35)",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: "25px",
+            }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "11px",
+                fontWeight: "bold",
+                letterSpacing: "3px",
+                marginBottom: "7px",
+              }}
+            >
+              NUOVO ACCOUNT
+            </div>
+
+            <h2
+              style={{
+                fontSize: "22px",
+                textTransform: "uppercase",
+              }}
+            >
+              Crea dipendente
+            </h2>
+
+            <p
+              style={{
+                color: "#777",
+                fontSize: "13px",
+                marginTop: "7px",
+              }}
+            >
+              Crea username, password e percentuale
+              stipendio del nuovo dipendente.
+            </p>
+          </div>
+
+          <form onSubmit={creaDipendente}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "15px",
+              }}
+            >
+              <div className="form-group">
+                <label>Nome</label>
+
+                <input
+                  type="text"
+                  value={nuovoDipendente.nome}
+                  onChange={(e) =>
+                    modificaNuovoDipendente(
+                      "nome",
+                      e.target.value
+                    )
+                  }
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Cognome</label>
+
+                <input
+                  type="text"
+                  value={nuovoDipendente.cognome}
+                  onChange={(e) =>
+                    modificaNuovoDipendente(
+                      "cognome",
+                      e.target.value
+                    )
+                  }
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Username</label>
+
+                <input
+                  type="text"
+                  value={nuovoDipendente.username}
+                  onChange={(e) =>
+                    modificaNuovoDipendente(
+                      "username",
+                      e.target.value
+                    )
+                  }
+                  placeholder="es. clarissa"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Password</label>
+
+                <input
+                  type="password"
+                  value={nuovoDipendente.password}
+                  onChange={(e) =>
+                    modificaNuovoDipendente(
+                      "password",
+                      e.target.value
+                    )
+                  }
+                  placeholder="Minimo 6 caratteri"
+                  autoComplete="new-password"
+                  minLength={6}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>% Stipendio</label>
+
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={
+                    nuovoDipendente.percentuale_stipendio
+                  }
+                  onChange={(e) =>
+                    modificaNuovoDipendente(
+                      "percentuale_stipendio",
+                      e.target.value
+                    )
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={creazioneDipendente}
+              style={{
+                marginTop: "5px",
+              }}
+            >
+              {creazioneDipendente
+                ? "Creazione..."
+                : "Crea dipendente"}
+            </button>
+          </form>
+        </div>
+
+        {/* ELENCO DIPENDENTI */}
 
         <div
           style={{
@@ -751,7 +1044,6 @@ export default function AdminPage() {
                           fontSize: "11px",
                           fontWeight: "bold",
                           marginTop: "7px",
-                          letterSpacing: "1px",
                         }}
                       >
                         FATTURA ANNULLATA
@@ -799,6 +1091,10 @@ export default function AdminPage() {
     </main>
   );
 }
+
+// ============================================
+// COMPONENTI
+// ============================================
 
 function StatCard({ titolo, valore }) {
   return (
