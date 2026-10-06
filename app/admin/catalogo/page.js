@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import Sidebar from "../../../components/Sidebar";
 
 export default function CatalogoAdminPage() {
   const router = useRouter();
@@ -637,22 +638,41 @@ export default function CatalogoAdminPage() {
     }
   }
 
+  // ==========================================
+  // LOADING
+  // ==========================================
+
   if (loading) {
     return (
-      <main className="page">
-        <div>
-          <h2>ARMERIA 200</h2>
+      <>
+        <Sidebar />
 
-          <p
+        <main
+          style={{
+            minHeight: "100vh",
+            marginLeft: "250px",
+            padding: "30px",
+          }}
+        >
+          <div
+            className="container"
             style={{
-              color: "#777",
-              marginTop: "10px",
+              maxWidth: "1100px",
             }}
           >
-            Caricamento catalogo...
-          </p>
-        </div>
-      </main>
+            <h2>ARMERIA 200</h2>
+
+            <p
+              style={{
+                color: "#777",
+                marginTop: "10px",
+              }}
+            >
+              Caricamento catalogo...
+            </p>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -662,32 +682,29 @@ export default function CatalogoAdminPage() {
     );
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "30px",
-      }}
-    >
-      <div
-        className="container"
+    <>
+      <Sidebar />
+
+      <main
         style={{
-          maxWidth: "1100px",
+          minHeight: "100vh",
+          marginLeft: "250px",
+          padding: "30px",
         }}
       >
-        {/* HEADER */}
-
         <div
+          className="container"
           style={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems: "center",
-            gap: "20px",
-            flexWrap: "wrap",
-            marginBottom: "35px",
+            maxWidth: "1100px",
           }}
         >
-          <div>
+          {/* HEADER */}
+
+          <div
+            style={{
+              marginBottom: "35px",
+            }}
+          >
             <div
               style={{
                 color: "#c42a2a",
@@ -706,430 +723,99 @@ export default function CatalogoAdminPage() {
 
             <p className="subtitle">
               Categorie, prodotti e prezzi
-              dell'Armeria 200
+              dell&apos;Armeria 200
             </p>
           </div>
 
-          <button
-            className="btn btn-dark"
-            onClick={() =>
-              router.push("/admin")
-            }
-          >
-            ← Pannello Admin
-          </button>
-        </div>
+          {/* MESSAGGI */}
 
-        {/* MESSAGGI */}
-
-        {errore && (
-          <div
-            className="error-message"
-            style={{
-              marginBottom: "20px",
-            }}
-          >
-            {errore}
-          </div>
-        )}
-
-        {successo && (
-          <div
-            className="success-message"
-            style={{
-              marginBottom: "20px",
-            }}
-          >
-            {successo}
-          </div>
-        )}
-
-        {/* NUOVA CATEGORIA */}
-
-        <div
-          className="card"
-          style={{
-            marginBottom: "25px",
-            border:
-              "1px solid rgba(139,30,30,.35)",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "22px",
-            }}
-          >
+          {errore && (
             <div
+              className="error-message"
               style={{
-                color: "#c42a2a",
-                fontSize: "11px",
-                fontWeight: "bold",
-                letterSpacing: "3px",
-                marginBottom: "7px",
+                marginBottom: "20px",
               }}
             >
-              NUOVA CATEGORIA
+              {errore}
             </div>
+          )}
 
-            <h2>Aggiungi categoria</h2>
-
-            <p
+          {successo && (
+            <div
+              className="success-message"
               style={{
-                color: "#777",
-                fontSize: "13px",
-                marginTop: "7px",
+                marginBottom: "20px",
               }}
             >
-              Crea una nuova sezione del
-              catalogo.
-            </p>
-          </div>
+              {successo}
+            </div>
+          )}
 
-          <form onSubmit={creaCategoria}>
+          {/* NUOVA CATEGORIA */}
+
+          <div
+            className="card"
+            style={{
+              marginBottom: "25px",
+              border:
+                "1px solid rgba(139,30,30,.35)",
+            }}
+          >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "2fr 1fr",
-                gap: "15px",
+                marginBottom: "22px",
               }}
             >
-              <div className="form-group">
-                <label>
-                  Nome categoria
-                </label>
-
-                <input
-                  type="text"
-                  value={
-                    nuovaCategoria.nome
-                  }
-                  onChange={(e) =>
-                    modificaNuovaCategoria(
-                      "nome",
-                      e.target.value
-                    )
-                  }
-                  placeholder="es. Munizioni"
-                  required
-                />
+              <div
+                style={{
+                  color: "#c42a2a",
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  letterSpacing: "3px",
+                  marginBottom: "7px",
+                }}
+              >
+                NUOVA CATEGORIA
               </div>
 
-              <div className="form-group">
-                <label>Ordine</label>
+              <h2>Aggiungi categoria</h2>
 
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={
-                    nuovaCategoria.ordine
-                  }
-                  onChange={(e) =>
-                    modificaNuovaCategoria(
-                      "ordine",
-                      e.target.value
-                    )
-                  }
-                />
-              </div>
+              <p
+                style={{
+                  color: "#777",
+                  fontSize: "13px",
+                  marginTop: "7px",
+                }}
+              >
+                Crea una nuova sezione del catalogo.
+              </p>
             </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={
-                creazioneCategoria
-              }
-            >
-              {creazioneCategoria
-                ? "Creazione..."
-                : "Aggiungi categoria"}
-            </button>
-          </form>
-        </div>
-
-        {/* GESTIONE CATEGORIE */}
-
-        <div
-          className="card"
-          style={{
-            marginBottom: "35px",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "22px",
-            }}
-          >
-            <div
-              style={{
-                color: "#c42a2a",
-                fontSize: "11px",
-                fontWeight: "bold",
-                letterSpacing: "3px",
-                marginBottom: "7px",
-              }}
-            >
-              CATEGORIE
-            </div>
-
-            <h2>Gestione categorie</h2>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            {categorie.map(
-              (categoria) => (
-                <div
-                  key={categoria.id}
-                  style={{
-                    padding: "15px",
-                    border:
-                      "1px solid rgba(255,255,255,.08)",
-                    borderRadius: "8px",
-                    opacity:
-                      categoria.attiva
-                        ? 1
-                        : 0.55,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "2fr 120px",
-                      gap: "15px",
-                    }}
-                  >
-                    <div className="form-group">
-                      <label>
-                        Categoria
-                      </label>
-
-                      <input
-                        type="text"
-                        value={
-                          categoria.nome
-                        }
-                        onChange={(e) =>
-                          modificaCategoriaLocale(
-                            categoria.id,
-                            "nome",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>
-                        Ordine
-                      </label>
-
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={
-                          categoria.ordine
-                        }
-                        onChange={(e) =>
-                          modificaCategoriaLocale(
-                            categoria.id,
-                            "ordine",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#777",
-                      fontSize: "12px",
-                      marginBottom:
-                        "15px",
-                    }}
-                  >
-                    {categoria.attiva
-                      ? "CATEGORIA ATTIVA"
-                      : "CATEGORIA DISATTIVATA"}
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "10px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <button
-                      className="btn btn-primary"
-                      disabled={
-                        salvataggioCategoria ===
-                        categoria.id
-                      }
-                      onClick={() =>
-                        salvaCategoria(
-                          categoria
-                        )
-                      }
-                    >
-                      Salva modifiche
-                    </button>
-
-                    <button
-                      className="btn btn-dark"
-                      disabled={
-                        salvataggioCategoria ===
-                        categoria.id
-                      }
-                      onClick={() =>
-                        cambiaStatoCategoria(
-                          categoria
-                        )
-                      }
-                    >
-                      {categoria.attiva
-                        ? "Disattiva"
-                        : "Riattiva"}
-                    </button>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* NUOVO PRODOTTO */}
-
-        <div
-          className="card"
-          style={{
-            marginBottom: "35px",
-            border:
-              "1px solid rgba(139,30,30,.35)",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "22px",
-            }}
-          >
-            <div
-              style={{
-                color: "#c42a2a",
-                fontSize: "11px",
-                fontWeight: "bold",
-                letterSpacing: "3px",
-                marginBottom: "7px",
-              }}
-            >
-              NUOVO ARTICOLO
-            </div>
-
-            <h2>Aggiungi prodotto</h2>
-          </div>
-
-          {categorieAttive.length ===
-          0 ? (
-            <div
-              style={{
-                color: "#777",
-              }}
-            >
-              Devi avere almeno una
-              categoria attiva per
-              aggiungere un prodotto.
-            </div>
-          ) : (
-            <form onSubmit={creaProdotto}>
+            <form onSubmit={creaCategoria}>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(180px, 1fr))",
+                  gridTemplateColumns: "2fr 1fr",
                   gap: "15px",
                 }}
               >
                 <div className="form-group">
-                  <label>Nome</label>
+                  <label>
+                    Nome categoria
+                  </label>
 
                   <input
                     type="text"
                     value={
-                      nuovoProdotto.nome
+                      nuovaCategoria.nome
                     }
                     onChange={(e) =>
-                      modificaNuovoProdotto(
+                      modificaNuovaCategoria(
                         "nome",
                         e.target.value
                       )
                     }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    Categoria
-                  </label>
-
-                  <select
-                    value={
-                      nuovoProdotto.category_id
-                    }
-                    onChange={(e) =>
-                      modificaNuovoProdotto(
-                        "category_id",
-                        e.target.value
-                      )
-                    }
-                    required
-                  >
-                    {categorieAttive.map(
-                      (categoria) => (
-                        <option
-                          key={
-                            categoria.id
-                          }
-                          value={
-                            categoria.id
-                          }
-                        >
-                          {
-                            categoria.nome
-                          }
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Prezzo</label>
-
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={
-                      nuovoProdotto.prezzo
-                    }
-                    onChange={(e) =>
-                      modificaNuovoProdotto(
-                        "prezzo",
-                        e.target.value
-                      )
-                    }
-                    placeholder="es. 15000"
+                    placeholder="es. Munizioni"
                     required
                   />
                 </div>
@@ -1142,10 +828,10 @@ export default function CatalogoAdminPage() {
                     min="0"
                     step="1"
                     value={
-                      nuovoProdotto.ordine
+                      nuovaCategoria.ordine
                     }
                     onChange={(e) =>
-                      modificaNuovoProdotto(
+                      modificaNuovaCategoria(
                         "ordine",
                         e.target.value
                       )
@@ -1157,319 +843,632 @@ export default function CatalogoAdminPage() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={creazione}
+                disabled={
+                  creazioneCategoria
+                }
               >
-                {creazione
-                  ? "Aggiunta..."
-                  : "Aggiungi prodotto"}
+                {creazioneCategoria
+                  ? "Creazione..."
+                  : "Aggiungi categoria"}
               </button>
             </form>
-          )}
-        </div>
+          </div>
 
-        {/* CATALOGO */}
+          {/* GESTIONE CATEGORIE */}
 
-        {categorie.map((categoria) => {
-          const prodottiCategoria =
-            prodotti.filter(
-              (prodotto) =>
-                Number(
-                  prodotto.category_id
-                ) ===
-                Number(categoria.id)
-            );
-
-          return (
+          <div
+            className="card"
+            style={{
+              marginBottom: "35px",
+            }}
+          >
             <div
-              key={categoria.id}
               style={{
-                marginBottom: "35px",
-                opacity:
-                  categoria.attiva
-                    ? 1
-                    : 0.65,
+                marginBottom: "22px",
               }}
             >
               <div
                 style={{
-                  display: "flex",
-                  justifyContent:
-                    "space-between",
-                  alignItems: "center",
-                  marginBottom: "13px",
-                  gap: "15px",
+                  color: "#c42a2a",
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  letterSpacing: "3px",
+                  marginBottom: "7px",
                 }}
               >
-                <div>
-                  <h2
-                    style={{
-                      fontSize: "20px",
-                      textTransform:
-                        "uppercase",
-                      letterSpacing:
-                        "2px",
-                    }}
-                  >
-                    {categoria.nome}
-                  </h2>
-
-                  {!categoria.attiva && (
-                    <div
-                      style={{
-                        color:
-                          "#c42a2a",
-                        fontSize:
-                          "11px",
-                        fontWeight:
-                          "900",
-                        marginTop:
-                          "4px",
-                      }}
-                    >
-                      CATEGORIA
-                      DISATTIVATA
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    color: "#777",
-                    fontSize: "12px",
-                  }}
-                >
-                  {
-                    prodottiCategoria.length
-                  }{" "}
-                  prodotti
-                </div>
+                CATEGORIE
               </div>
 
-              {prodottiCategoria.length ===
-              0 ? (
+              <h2>Gestione categorie</h2>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              {categorie.map(
+                (categoria) => (
+                  <div
+                    key={categoria.id}
+                    style={{
+                      padding: "15px",
+                      border:
+                        "1px solid rgba(255,255,255,.08)",
+                      borderRadius: "8px",
+                      opacity:
+                        categoria.attiva
+                          ? 1
+                          : 0.55,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "2fr 120px",
+                        gap: "15px",
+                      }}
+                    >
+                      <div className="form-group">
+                        <label>
+                          Categoria
+                        </label>
+
+                        <input
+                          type="text"
+                          value={
+                            categoria.nome
+                          }
+                          onChange={(e) =>
+                            modificaCategoriaLocale(
+                              categoria.id,
+                              "nome",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>
+                          Ordine
+                        </label>
+
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={
+                            categoria.ordine
+                          }
+                          onChange={(e) =>
+                            modificaCategoriaLocale(
+                              categoria.id,
+                              "ordine",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        color: "#777",
+                        fontSize: "12px",
+                        marginBottom:
+                          "15px",
+                      }}
+                    >
+                      {categoria.attiva
+                        ? "CATEGORIA ATTIVA"
+                        : "CATEGORIA DISATTIVATA"}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        className="btn btn-primary"
+                        disabled={
+                          salvataggioCategoria ===
+                          categoria.id
+                        }
+                        onClick={() =>
+                          salvaCategoria(
+                            categoria
+                          )
+                        }
+                      >
+                        Salva modifiche
+                      </button>
+
+                      <button
+                        className="btn btn-dark"
+                        disabled={
+                          salvataggioCategoria ===
+                          categoria.id
+                        }
+                        onClick={() =>
+                          cambiaStatoCategoria(
+                            categoria
+                          )
+                        }
+                      >
+                        {categoria.attiva
+                          ? "Disattiva"
+                          : "Riattiva"}
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* NUOVO PRODOTTO */}
+
+          <div
+            className="card"
+            style={{
+              marginBottom: "35px",
+              border:
+                "1px solid rgba(139,30,30,.35)",
+            }}
+          >
+            <div
+              style={{
+                marginBottom: "22px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#c42a2a",
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  letterSpacing: "3px",
+                  marginBottom: "7px",
+                }}
+              >
+                NUOVO ARTICOLO
+              </div>
+
+              <h2>Aggiungi prodotto</h2>
+            </div>
+
+            {categorieAttive.length ===
+            0 ? (
+              <div
+                style={{
+                  color: "#777",
+                }}
+              >
+                Devi avere almeno una categoria attiva per
+                aggiungere un prodotto.
+              </div>
+            ) : (
+              <form onSubmit={creaProdotto}>
                 <div
-                  className="card"
                   style={{
-                    color: "#777",
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: "15px",
                   }}
                 >
-                  Nessun prodotto in questa
-                  categoria.
+                  <div className="form-group">
+                    <label>Nome</label>
+
+                    <input
+                      type="text"
+                      value={
+                        nuovoProdotto.nome
+                      }
+                      onChange={(e) =>
+                        modificaNuovoProdotto(
+                          "nome",
+                          e.target.value
+                        )
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>
+                      Categoria
+                    </label>
+
+                    <select
+                      value={
+                        nuovoProdotto.category_id
+                      }
+                      onChange={(e) =>
+                        modificaNuovoProdotto(
+                          "category_id",
+                          e.target.value
+                        )
+                      }
+                      required
+                    >
+                      {categorieAttive.map(
+                        (categoria) => (
+                          <option
+                            key={
+                              categoria.id
+                            }
+                            value={
+                              categoria.id
+                            }
+                          >
+                            {
+                              categoria.nome
+                            }
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Prezzo</label>
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={
+                        nuovoProdotto.prezzo
+                      }
+                      onChange={(e) =>
+                        modificaNuovoProdotto(
+                          "prezzo",
+                          e.target.value
+                        )
+                      }
+                      placeholder="es. 15000"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Ordine</label>
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={
+                        nuovoProdotto.ordine
+                      }
+                      onChange={(e) =>
+                        modificaNuovoProdotto(
+                          "ordine",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
                 </div>
-              ) : (
+
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={creazione}
+                >
+                  {creazione
+                    ? "Aggiunta..."
+                    : "Aggiungi prodotto"}
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* CATALOGO */}
+
+          {categorie.map((categoria) => {
+            const prodottiCategoria =
+              prodotti.filter(
+                (prodotto) =>
+                  Number(
+                    prodotto.category_id
+                  ) ===
+                  Number(categoria.id)
+              );
+
+            return (
+              <div
+                key={categoria.id}
+                style={{
+                  marginBottom: "35px",
+                  opacity:
+                    categoria.attiva
+                      ? 1
+                      : 0.65,
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
-                    flexDirection:
-                      "column",
-                    gap: "12px",
+                    justifyContent:
+                      "space-between",
+                    alignItems: "center",
+                    marginBottom: "13px",
+                    gap: "15px",
                   }}
                 >
-                  {prodottiCategoria.map(
-                    (prodotto) => (
+                  <div>
+                    <h2
+                      style={{
+                        fontSize: "20px",
+                        textTransform:
+                          "uppercase",
+                        letterSpacing:
+                          "2px",
+                      }}
+                    >
+                      {categoria.nome}
+                    </h2>
+
+                    {!categoria.attiva && (
                       <div
-                        className="card"
-                        key={prodotto.id}
                         style={{
-                          opacity:
-                            prodotto.attivo
-                              ? 1
-                              : 0.55,
+                          color:
+                            "#c42a2a",
+                          fontSize:
+                            "11px",
+                          fontWeight:
+                            "900",
+                          marginTop:
+                            "4px",
                         }}
                       >
+                        CATEGORIA DISATTIVATA
+                      </div>
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#777",
+                      fontSize: "12px",
+                    }}
+                  >
+                    {
+                      prodottiCategoria.length
+                    }{" "}
+                    prodotti
+                  </div>
+                </div>
+
+                {prodottiCategoria.length ===
+                0 ? (
+                  <div
+                    className="card"
+                    style={{
+                      color: "#777",
+                    }}
+                  >
+                    Nessun prodotto in questa categoria.
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection:
+                        "column",
+                      gap: "12px",
+                    }}
+                  >
+                    {prodottiCategoria.map(
+                      (prodotto) => (
                         <div
+                          className="card"
+                          key={prodotto.id}
                           style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "2fr 1fr 1fr 100px",
-                            gap: "15px",
-                            alignItems:
-                              "end",
+                            opacity:
+                              prodotto.attivo
+                                ? 1
+                                : 0.55,
                           }}
                         >
-                          <div className="form-group">
-                            <label>
-                              Prodotto
-                            </label>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "2fr 1fr 1fr 100px",
+                              gap: "15px",
+                              alignItems:
+                                "end",
+                            }}
+                          >
+                            <div className="form-group">
+                              <label>
+                                Prodotto
+                              </label>
 
-                            <input
-                              value={
-                                prodotto.nome
-                              }
-                              onChange={(e) =>
-                                modificaProdottoLocale(
-                                  prodotto.id,
-                                  "nome",
-                                  e.target
-                                    .value
-                                )
-                              }
-                            />
+                              <input
+                                value={
+                                  prodotto.nome
+                                }
+                                onChange={(e) =>
+                                  modificaProdottoLocale(
+                                    prodotto.id,
+                                    "nome",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+
+                            <div className="form-group">
+                              <label>
+                                Categoria
+                              </label>
+
+                              <select
+                                value={
+                                  prodotto.category_id
+                                }
+                                onChange={(e) =>
+                                  modificaProdottoLocale(
+                                    prodotto.id,
+                                    "category_id",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                {categorie.map(
+                                  (
+                                    categoriaOpzione
+                                  ) => (
+                                    <option
+                                      key={
+                                        categoriaOpzione.id
+                                      }
+                                      value={
+                                        categoriaOpzione.id
+                                      }
+                                    >
+                                      {
+                                        categoriaOpzione.nome
+                                      }
+                                      {!categoriaOpzione.attiva
+                                        ? " (disattivata)"
+                                        : ""}
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            </div>
+
+                            <div className="form-group">
+                              <label>
+                                Prezzo
+                              </label>
+
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={
+                                  prodotto.prezzo
+                                }
+                                onChange={(e) =>
+                                  modificaProdottoLocale(
+                                    prodotto.id,
+                                    "prezzo",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+
+                            <div className="form-group">
+                              <label>
+                                Ordine
+                              </label>
+
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={
+                                  prodotto.ordine
+                                }
+                                onChange={(e) =>
+                                  modificaProdottoLocale(
+                                    prodotto.id,
+                                    "ordine",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
                           </div>
 
-                          <div className="form-group">
-                            <label>
-                              Categoria
-                            </label>
+                          <div
+                            style={{
+                              color: "#777",
+                              fontSize:
+                                "12px",
+                              marginBottom:
+                                "15px",
+                            }}
+                          >
+                            Prezzo attuale:{" "}
+                            <strong
+                              style={{
+                                color:
+                                  "#fff",
+                              }}
+                            >
+                              {formattaSoldi(
+                                prodotto.prezzo
+                              )}
+                            </strong>
 
-                            <select
-                              value={
-                                prodotto.category_id
+                            {!prodotto.attivo &&
+                              " • PRODOTTO DISATTIVATO"}
+                          </div>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "10px",
+                              flexWrap:
+                                "wrap",
+                            }}
+                          >
+                            <button
+                              className="btn btn-primary"
+                              disabled={
+                                salvataggio ===
+                                prodotto.id
                               }
-                              onChange={(e) =>
-                                modificaProdottoLocale(
-                                  prodotto.id,
-                                  "category_id",
-                                  e.target
-                                    .value
+                              onClick={() =>
+                                salvaProdotto(
+                                  prodotto
                                 )
                               }
                             >
-                              {categorie.map(
-                                (
-                                  categoriaOpzione
-                                ) => (
-                                  <option
-                                    key={
-                                      categoriaOpzione.id
-                                    }
-                                    value={
-                                      categoriaOpzione.id
-                                    }
-                                  >
-                                    {
-                                      categoriaOpzione.nome
-                                    }
-                                    {!categoriaOpzione.attiva
-                                      ? " (disattivata)"
-                                      : ""}
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </div>
+                              Salva modifiche
+                            </button>
 
-                          <div className="form-group">
-                            <label>
-                              Prezzo
-                            </label>
-
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={
-                                prodotto.prezzo
+                            <button
+                              className="btn btn-dark"
+                              disabled={
+                                salvataggio ===
+                                prodotto.id
                               }
-                              onChange={(e) =>
-                                modificaProdottoLocale(
-                                  prodotto.id,
-                                  "prezzo",
-                                  e.target
-                                    .value
+                              onClick={() =>
+                                cambiaStatoProdotto(
+                                  prodotto
                                 )
                               }
-                            />
-                          </div>
-
-                          <div className="form-group">
-                            <label>
-                              Ordine
-                            </label>
-
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={
-                                prodotto.ordine
-                              }
-                              onChange={(e) =>
-                                modificaProdottoLocale(
-                                  prodotto.id,
-                                  "ordine",
-                                  e.target
-                                    .value
-                                )
-                              }
-                            />
+                            >
+                              {prodotto.attivo
+                                ? "Disattiva"
+                                : "Riattiva"}
+                            </button>
                           </div>
                         </div>
-
-                        <div
-                          style={{
-                            color: "#777",
-                            fontSize:
-                              "12px",
-                            marginBottom:
-                              "15px",
-                          }}
-                        >
-                          Prezzo attuale:{" "}
-                          <strong
-                            style={{
-                              color:
-                                "#fff",
-                            }}
-                          >
-                            {formattaSoldi(
-                              prodotto.prezzo
-                            )}
-                          </strong>
-
-                          {!prodotto.attivo &&
-                            " • PRODOTTO DISATTIVATO"}
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "10px",
-                            flexWrap:
-                              "wrap",
-                          }}
-                        >
-                          <button
-                            className="btn btn-primary"
-                            disabled={
-                              salvataggio ===
-                              prodotto.id
-                            }
-                            onClick={() =>
-                              salvaProdotto(
-                                prodotto
-                              )
-                            }
-                          >
-                            Salva modifiche
-                          </button>
-
-                          <button
-                            className="btn btn-dark"
-                            disabled={
-                              salvataggio ===
-                              prodotto.id
-                            }
-                            onClick={() =>
-                              cambiaStatoProdotto(
-                                prodotto
-                              )
-                            }
-                          >
-                            {prodotto.attivo
-                              ? "Disattiva"
-                              : "Riattiva"}
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </main>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </main>
+    </>
   );
 }
