@@ -9,7 +9,8 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
   const [profilo, setProfilo] = useState(null);
-  const [statistiche, setStatistiche] = useState({
+
+  const [stats, setStats] = useState({
     fatturato: 0,
     stipendio: 0,
     numero_fatture: 0,
@@ -21,7 +22,6 @@ export default function DashboardPage() {
 
   async function caricaDashboard() {
     try {
-      // Recupera utente autenticato
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -31,21 +31,28 @@ export default function DashboardPage() {
         return;
       }
 
-      // Recupera profilo
+      // PROFILO
       const { data: profiloData, error: profiloError } =
         await supabase
           .from("profiles")
-          .select("*")
+          .select(`
+            id,
+            username,
+            nome,
+            cognome,
+            ruolo,
+            grado,
+            percentuale_stipendio,
+            attivo
+          `)
           .eq("id", user.id)
           .single();
 
       if (profiloError || !profiloData) {
-        console.error(profiloError);
-        await supabase.auth.signOut();
-        router.replace("/login");
-        return;
+        throw profiloError || new Error("Profilo non trovato");
       }
 
+      // ACCOUNT DISATTIVATO
       if (!profiloData.attivo) {
         await supabase.auth.signOut();
         router.replace("/login");
@@ -54,29 +61,42 @@ export default function DashboardPage() {
 
       setProfilo(profiloData);
 
-      // Recupera statistiche dipendente
+      // STATISTICHE
       const { data: statsData, error: statsError } =
         await supabase
           .from("employee_stats")
-          .select("*")
+          .select(`
+            numero_fatture,
+            fatturato,
+            stipendio
+          `)
           .eq("id", user.id)
           .maybeSingle();
 
       if (statsError) {
-        console.error(statsError);
+        throw statsError;
       }
 
       if (statsData) {
-        setStatistiche({
-          fatturato: Number(statsData.fatturato || 0),
-          stipendio: Number(statsData.stipendio || 0),
+        setStats({
           numero_fatture: Number(
             statsData.numero_fatture || 0
+          ),
+
+          fatturato: Number(
+            statsData.fatturato || 0
+          ),
+
+          stipendio: Number(
+            statsData.stipendio || 0
           ),
         });
       }
     } catch (error) {
-      console.error("Errore dashboard:", error);
+      console.error(
+        "Errore caricamento dashboard:",
+        error
+      );
     } finally {
       setLoading(false);
     }
@@ -84,9 +104,7 @@ export default function DashboardPage() {
 
   async function logout() {
     await supabase.auth.signOut();
-
     router.replace("/login");
-    router.refresh();
   }
 
   function formattaSoldi(numero) {
@@ -94,17 +112,13 @@ export default function DashboardPage() {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 0,
-    }).format(numero || 0);
+    }).format(Number(numero || 0));
   }
 
   if (loading) {
     return (
       <main className="page">
-        <div
-          style={{
-            textAlign: "center",
-          }}
-        >
+        <div>
           <h2>ARMERIA 200</h2>
 
           <p
@@ -113,7 +127,7 @@ export default function DashboardPage() {
               marginTop: "10px",
             }}
           >
-            Caricamento gestionale...
+            Caricamento dashboard...
           </p>
         </div>
       </main>
@@ -124,7 +138,13 @@ export default function DashboardPage() {
     return null;
   }
 
-  const admin = profilo.ruolo === "admin";
+  const admin =
+    profilo.ruolo === "admin";
+
+  const nomeCompleto =
+    `${profilo.nome || ""} ${
+      profilo.cognome || ""
+    }`.trim();
 
   return (
     <main
@@ -133,11 +153,13 @@ export default function DashboardPage() {
         padding: "30px",
       }}
     >
-      <div className="container">
-
-        {/* ========================= */}
+      <div
+        className="container"
+        style={{
+          maxWidth: "1100px",
+        }}
+      >
         {/* HEADER */}
-        {/* ========================= */}
 
         <div
           style={{
@@ -152,7 +174,7 @@ export default function DashboardPage() {
           <div>
             <div
               style={{
-                color: "#8b1e1e",
+                color: "#c42a2a",
                 fontSize: "12px",
                 fontWeight: "bold",
                 letterSpacing: "4px",
@@ -167,26 +189,7 @@ export default function DashboardPage() {
             </h1>
 
             <p className="subtitle">
-              Benvenuto{" "}
-              <strong
-                style={{
-                  color: "#fff",
-                }}
-              >
-                {profilo.nome || profilo.username}
-              </strong>
-
-              {admin && (
-                <span
-                  style={{
-                    marginLeft: "10px",
-                    color: "#c42a2a",
-                    fontWeight: "bold",
-                  }}
-                >
-                  ADMIN
-                </span>
-              )}
+              Gestionale dipendenti
             </p>
           </div>
 
@@ -194,59 +197,150 @@ export default function DashboardPage() {
             className="btn btn-dark"
             onClick={logout}
           >
-            Esci
+            Logout
           </button>
         </div>
 
-        {/* ========================= */}
+        {/* PROFILO */}
+
+        <div
+          className="card"
+          style={{
+            marginBottom: "25px",
+            border:
+              "1px solid rgba(139,30,30,.35)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "20px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                  letterSpacing: "2px",
+                  marginBottom: "8px",
+                }}
+              >
+                Benvenuto
+              </div>
+
+              <div
+                style={{
+                  fontSize: "26px",
+                  fontWeight: "900",
+                }}
+              >
+                {nomeCompleto ||
+                  profilo.username}
+              </div>
+
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "13px",
+                  marginTop: "5px",
+                }}
+              >
+                @{profilo.username}
+              </div>
+            </div>
+
+            <div
+              style={{
+                textAlign: "right",
+              }}
+            >
+              {admin && (
+                <div
+                  style={{
+                    display: "inline-block",
+                    background:
+                      "rgba(139,30,30,.18)",
+                    border:
+                      "1px solid rgba(196,42,42,.35)",
+                    color: "#e64b4b",
+                    padding: "5px 10px",
+                    borderRadius: "20px",
+                    fontSize: "10px",
+                    fontWeight: "900",
+                    letterSpacing: "1px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  ADMIN
+                </div>
+              )}
+
+              <div
+                style={{
+                  color: "#fff",
+                  fontSize: "18px",
+                  fontWeight: "900",
+                }}
+              >
+                {profilo.grado ||
+                  "Dipendente"}
+              </div>
+
+              <div
+                style={{
+                  color: "#c42a2a",
+                  fontSize: "13px",
+                  fontWeight: "800",
+                  marginTop: "4px",
+                }}
+              >
+                Stipendio{" "}
+                {
+                  profilo.percentuale_stipendio
+                }
+                %
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* STATISTICHE */}
-        {/* ========================= */}
 
         <div
           style={{
             display: "grid",
             gridTemplateColumns:
               "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "18px",
+            gap: "15px",
             marginBottom: "35px",
           }}
         >
           <StatCard
             titolo="Fatturato personale"
             valore={formattaSoldi(
-              statistiche.fatturato
+              stats.fatturato
             )}
           />
 
           <StatCard
-            titolo="Stipendio"
+            titolo="Stipendio maturato"
             valore={formattaSoldi(
-              statistiche.stipendio
+              stats.stipendio
             )}
-            sotto={
-              profilo.percentuale_stipendio +
-              "% del fatturato"
-            }
           />
 
           <StatCard
             titolo="Fatture effettuate"
-            valore={statistiche.numero_fatture}
-          />
-
-          <StatCard
-            titolo="Ruolo"
-            valore={
-              admin
-                ? "Amministratore"
-                : "Dipendente"
-            }
+            valore={stats.numero_fatture}
           />
         </div>
 
-        {/* ========================= */}
         {/* MENU */}
-        {/* ========================= */}
 
         <div
           style={{
@@ -268,13 +362,13 @@ export default function DashboardPage() {
           style={{
             display: "grid",
             gridTemplateColumns:
-              "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: "18px",
+              "repeat(auto-fit, minmax(230px, 1fr))",
+            gap: "15px",
           }}
         >
           <MenuCard
-            titolo="Nuova Fattura"
-            descrizione="Crea una nuova fattura Armeria 200."
+            titolo="Nuova fattura"
+            descrizione="Registra una nuova vendita dell'Armeria."
             bottone="Crea fattura"
             onClick={() =>
               router.push("/fatture")
@@ -282,9 +376,9 @@ export default function DashboardPage() {
           />
 
           <MenuCard
-            titolo="Storico Fatture"
-            descrizione="Consulta le fatture effettuate."
-            bottone="Visualizza storico"
+            titolo="Storico fatture"
+            descrizione="Visualizza le fatture già registrate."
+            bottone="Apri storico"
             onClick={() =>
               router.push("/storico")
             }
@@ -292,8 +386,8 @@ export default function DashboardPage() {
 
           <MenuCard
             titolo="Stipendio"
-            descrizione="Controlla fatturato e stipendio maturato."
-            bottone="Visualizza"
+            descrizione={`Controlla il tuo stipendio maturato al ${profilo.percentuale_stipendio}%.`}
+            bottone="Vedi stipendio"
             onClick={() =>
               router.push("/stipendio")
             }
@@ -302,7 +396,7 @@ export default function DashboardPage() {
           {admin && (
             <MenuCard
               titolo="Pannello Admin"
-              descrizione="Gestisci dipendenti, fatture e statistiche dell'Armeria."
+              descrizione="Gestisci personale, ruoli, fatture e stipendi."
               bottone="Amministrazione"
               onClick={() =>
                 router.push("/admin")
@@ -311,37 +405,14 @@ export default function DashboardPage() {
             />
           )}
         </div>
-
-        {/* ========================= */}
-        {/* FOOTER */}
-        {/* ========================= */}
-
-        <div
-          style={{
-            marginTop: "50px",
-            paddingTop: "20px",
-            borderTop: "1px solid #222",
-            textAlign: "center",
-            color: "#555",
-            fontSize: "11px",
-            letterSpacing: "2px",
-          }}
-        >
-          ARMERIA 200 • GESTIONALE INTERNO
-        </div>
       </div>
     </main>
   );
 }
 
-/* ============================= */
-/* CARD STATISTICHE */
-/* ============================= */
-
 function StatCard({
   titolo,
   valore,
-  sotto,
 }) {
   return (
     <div className="card">
@@ -359,33 +430,15 @@ function StatCard({
 
       <div
         style={{
-          fontSize: "27px",
-          fontWeight: "800",
-          color: "#fff",
+          fontSize: "28px",
+          fontWeight: "900",
         }}
       >
         {valore}
       </div>
-
-      {sotto && (
-        <div
-          style={{
-            color: "#8b1e1e",
-            fontSize: "12px",
-            marginTop: "7px",
-            fontWeight: "bold",
-          }}
-        >
-          {sotto}
-        </div>
-      )}
     </div>
   );
 }
-
-/* ============================= */
-/* CARD MENU */
-/* ============================= */
 
 function MenuCard({
   titolo,
@@ -400,39 +453,38 @@ function MenuCard({
       style={{
         display: "flex",
         flexDirection: "column",
-        minHeight: "210px",
+        minHeight: "200px",
+
+        border: admin
+          ? "1px solid rgba(139,30,30,.45)"
+          : undefined,
       }}
     >
       <div
         style={{
-          width: "40px",
-          height: "3px",
-          background: admin
+          color: admin
             ? "#c42a2a"
-            : "#7d1616",
-          marginBottom: "20px",
-        }}
-      />
-
-      <h3
-        style={{
-          fontSize: "20px",
+            : "#fff",
+          fontSize: "18px",
+          fontWeight: "900",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
           marginBottom: "10px",
         }}
       >
         {titolo}
-      </h3>
+      </div>
 
-      <p
+      <div
         style={{
           color: "#777",
           fontSize: "13px",
           lineHeight: "1.6",
-          marginBottom: "25px",
+          flex: 1,
         }}
       >
         {descrizione}
-      </p>
+      </div>
 
       <button
         className={
@@ -442,8 +494,8 @@ function MenuCard({
         }
         onClick={onClick}
         style={{
+          marginTop: "20px",
           width: "100%",
-          marginTop: "auto",
         }}
       >
         {bottone}
