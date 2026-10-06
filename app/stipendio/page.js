@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import Sidebar from "../../components/Sidebar";
 
 export default function StipendioPage() {
   const router = useRouter();
@@ -31,25 +32,46 @@ export default function StipendioPage() {
         return;
       }
 
-      const { data: profiloData, error: profiloError } =
-        await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
+      // ==============================
+      // PROFILO
+      // ==============================
+
+      const {
+        data: profiloData,
+        error: profiloError,
+      } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
       if (profiloError || !profiloData) {
-        throw profiloError || new Error("Profilo non trovato");
+        throw (
+          profiloError ||
+          new Error("Profilo non trovato")
+        );
+      }
+
+      if (!profiloData.attivo) {
+        await supabase.auth.signOut();
+        router.replace("/login");
+        return;
       }
 
       setProfilo(profiloData);
 
-      const { data: statsData, error: statsError } =
-        await supabase
-          .from("employee_stats")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
+      // ==============================
+      // STATISTICHE DIPENDENTE
+      // ==============================
+
+      const {
+        data: statsData,
+        error: statsError,
+      } = await supabase
+        .from("employee_stats")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
 
       if (statsError) {
         throw statsError;
@@ -57,71 +79,138 @@ export default function StipendioPage() {
 
       if (statsData) {
         setStats({
-          fatturato: Number(statsData.fatturato || 0),
-          stipendio: Number(statsData.stipendio || 0),
+          fatturato: Number(
+            statsData.fatturato || 0
+          ),
+
+          stipendio: Number(
+            statsData.stipendio || 0
+          ),
+
           numero_fatture: Number(
             statsData.numero_fatture || 0
           ),
         });
       }
     } catch (error) {
-      console.error("Errore stipendio:", error);
+      console.error(
+        "Errore stipendio:",
+        error
+      );
     } finally {
       setLoading(false);
     }
   }
 
+  // ==============================
+  // FORMATTA SOLDI
+  // ==============================
+
   function formattaSoldi(numero) {
-    return new Intl.NumberFormat("it-IT", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(Number(numero || 0));
+    return new Intl.NumberFormat(
+      "it-IT",
+      {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }
+    ).format(
+      Number(numero || 0)
+    );
   }
+
+  // ==============================
+  // LOADING
+  // ==============================
 
   if (loading) {
     return (
-      <main className="page">
-        <div>
-          Caricamento stipendio...
-        </div>
-      </main>
+      <>
+        <Sidebar />
+
+        <main
+          style={{
+            minHeight: "100vh",
+            marginLeft: "250px",
+            padding: "30px",
+          }}
+        >
+          <div
+            className="container"
+            style={{
+              maxWidth: "900px",
+            }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "12px",
+                fontWeight: "bold",
+                letterSpacing: "4px",
+                marginBottom: "8px",
+              }}
+            >
+              ARMERIA 200
+            </div>
+
+            <div
+              style={{
+                color: "#777",
+              }}
+            >
+              Caricamento stipendio...
+            </div>
+          </div>
+        </main>
+      </>
     );
   }
 
   if (!profilo) {
-    return null;
+    return (
+      <>
+        <Sidebar />
+
+        <main
+          style={{
+            minHeight: "100vh",
+            marginLeft: "250px",
+            padding: "30px",
+          }}
+        />
+      </>
+    );
   }
 
   const percentuale =
-    Number(profilo.percentuale_stipendio || 0);
+    Number(
+      profilo.percentuale_stipendio || 0
+    );
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "30px",
-      }}
-    >
-      <div
-        className="container"
+    <>
+      <Sidebar />
+
+      <main
         style={{
-          maxWidth: "900px",
+          minHeight: "100vh",
+          marginLeft: "250px",
+          padding: "30px",
         }}
       >
-        {/* HEADER */}
-
         <div
+          className="container"
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "20px",
-            flexWrap: "wrap",
-            marginBottom: "35px",
+            maxWidth: "900px",
           }}
         >
-          <div>
+          {/* HEADER */}
+
+          <div
+            style={{
+              marginBottom: "35px",
+            }}
+          >
             <div
               style={{
                 color: "#8b1e1e",
@@ -144,146 +233,180 @@ export default function StipendioPage() {
             </p>
           </div>
 
-          <button
-            className="btn btn-dark"
-            onClick={() =>
-              router.push("/dashboard")
-            }
-          >
-            ← Dashboard
-          </button>
-        </div>
-
-        {/* DIPENDENTE */}
-
-        <div
-          className="card"
-          style={{
-            marginBottom: "20px",
-          }}
-        >
-          <div
-            style={{
-              color: "#777",
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "2px",
-              marginBottom: "8px",
-            }}
-          >
-            Dipendente
-          </div>
+          {/* DIPENDENTE */}
 
           <div
+            className="card"
             style={{
-              fontSize: "24px",
-              fontWeight: "800",
+              marginBottom: "20px",
             }}
           >
-            {profilo.nome || profilo.username}{" "}
-            {profilo.cognome || ""}
-          </div>
-
-          <div
-            style={{
-              color: "#8b1e1e",
-              fontWeight: "bold",
-              marginTop: "7px",
-            }}
-          >
-            Percentuale stipendio:{" "}
-            {percentuale}%
-          </div>
-        </div>
-
-        {/* STATISTICHE */}
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "18px",
-            marginBottom: "20px",
-          }}
-        >
-          <StatCard
-            titolo="Fatture effettuate"
-            valore={stats.numero_fatture}
-          />
-
-          <StatCard
-            titolo="Fatturato personale"
-            valore={formattaSoldi(
-              stats.fatturato
-            )}
-          />
-
-          <StatCard
-            titolo="Percentuale"
-            valore={`${percentuale}%`}
-          />
-        </div>
-
-        {/* STIPENDIO */}
-
-        <div
-          className="card"
-          style={{
-            border:
-              "1px solid rgba(139,30,30,.45)",
-            textAlign: "center",
-            padding: "40px 25px",
-          }}
-        >
-          <div
-            style={{
-              color: "#777",
-              fontSize: "12px",
-              textTransform: "uppercase",
-              letterSpacing: "3px",
-            }}
-          >
-            Stipendio maturato
-          </div>
-
-          <div
-            style={{
-              fontSize: "48px",
-              fontWeight: "900",
-              marginTop: "15px",
-              color: "#fff",
-            }}
-          >
-            {formattaSoldi(
-              stats.stipendio
-            )}
-          </div>
-
-          <div
-            style={{
-              color: "#777",
-              fontSize: "13px",
-              marginTop: "15px",
-            }}
-          >
-            {formattaSoldi(
-              stats.fatturato
-            )}{" "}
-            × {percentuale}% ={" "}
-            <strong
+            <div
               style={{
-                color: "#c42a2a",
+                color: "#777",
+                fontSize: "11px",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+                marginBottom: "8px",
+              }}
+            >
+              Dipendente
+            </div>
+
+            <div
+              style={{
+                fontSize: "24px",
+                fontWeight: "800",
+              }}
+            >
+              {profilo.nome ||
+                profilo.username}{" "}
+              {profilo.cognome || ""}
+            </div>
+
+            {profilo.username && (
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "12px",
+                  marginTop: "5px",
+                }}
+              >
+                @{profilo.username}
+              </div>
+            )}
+
+            {profilo.grado && (
+              <div
+                style={{
+                  color: "#aaa",
+                  fontSize: "12px",
+                  marginTop: "8px",
+                  fontWeight: "700",
+                }}
+              >
+                {profilo.grado}
+              </div>
+            )}
+
+            <div
+              style={{
+                color: "#8b1e1e",
+                fontWeight: "bold",
+                marginTop: "7px",
+              }}
+            >
+              Percentuale stipendio:{" "}
+              {percentuale}%
+            </div>
+          </div>
+
+          {/* STATISTICHE */}
+
+          <div
+            style={{
+              display: "grid",
+
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(220px, 1fr))",
+
+              gap: "18px",
+
+              marginBottom: "20px",
+            }}
+          >
+            <StatCard
+              titolo="Fatture effettuate"
+              valore={
+                stats.numero_fatture
+              }
+            />
+
+            <StatCard
+              titolo="Fatturato personale"
+              valore={formattaSoldi(
+                stats.fatturato
+              )}
+            />
+
+            <StatCard
+              titolo="Percentuale"
+              valore={`${percentuale}%`}
+            />
+          </div>
+
+          {/* STIPENDIO */}
+
+          <div
+            className="card"
+            style={{
+              border:
+                "1px solid rgba(139,30,30,.45)",
+
+              textAlign: "center",
+
+              padding: "40px 25px",
+            }}
+          >
+            <div
+              style={{
+                color: "#777",
+
+                fontSize: "12px",
+
+                textTransform:
+                  "uppercase",
+
+                letterSpacing:
+                  "3px",
+              }}
+            >
+              Stipendio maturato
+            </div>
+
+            <div
+              style={{
+                fontSize: "48px",
+
+                fontWeight: "900",
+
+                marginTop: "15px",
+
+                color: "#fff",
               }}
             >
               {formattaSoldi(
                 stats.stipendio
               )}
-            </strong>
+            </div>
+
+            <div
+              style={{
+                color: "#777",
+
+                fontSize: "13px",
+
+                marginTop: "15px",
+              }}
+            >
+              {formattaSoldi(
+                stats.fatturato
+              )}{" "}
+              × {percentuale}% ={" "}
+              <strong
+                style={{
+                  color: "#c42a2a",
+                }}
+              >
+                {formattaSoldi(
+                  stats.stipendio
+                )}
+              </strong>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
 
@@ -296,9 +419,15 @@ function StatCard({
       <div
         style={{
           color: "#777",
+
           fontSize: "11px",
-          textTransform: "uppercase",
-          letterSpacing: "1.5px",
+
+          textTransform:
+            "uppercase",
+
+          letterSpacing:
+            "1.5px",
+
           marginBottom: "10px",
         }}
       >
