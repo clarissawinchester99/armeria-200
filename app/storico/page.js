@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import Sidebar from "../../components/Sidebar";
 
 export default function StoricoPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function StoricoPage() {
   const [profilo, setProfilo] = useState(null);
   const [fatture, setFatture] = useState([]);
   const [errore, setErrore] = useState("");
+
   const [fatturaAperta, setFatturaAperta] =
     useState(null);
 
@@ -62,16 +64,6 @@ export default function StoricoPage() {
 
       // ==============================
       // CARICA FATTURE
-      // ==============================
-      //
-      // Grazie alle policy Supabase:
-      //
-      // dipendente = vede solo le proprie
-      // admin = vede tutte le fatture
-      //
-      // Oltre alla relazione profiles,
-      // carichiamo anche la copia storica
-      // dei dati del dipendente.
       // ==============================
 
       const {
@@ -168,14 +160,6 @@ export default function StoricoPage() {
   // ==============================
   // NOME DIPENDENTE
   // ==============================
-  //
-  // Se il dipendente esiste ancora,
-  // utilizziamo il profilo attuale.
-  //
-  // Se è stato eliminato,
-  // utilizziamo la copia storica
-  // salvata nella fattura.
-  // ==============================
 
   function nomeDipendente(fattura) {
     const profiloDipendente =
@@ -248,22 +232,37 @@ export default function StoricoPage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div>
-          <h2>
-            ARMERIA 200
-          </h2>
+      <>
+        <Sidebar />
 
-          <p
+        <main
+          style={{
+            minHeight: "100vh",
+            marginLeft: "250px",
+            padding: "30px",
+          }}
+        >
+          <div
+            className="container"
             style={{
-              color: "#777",
-              marginTop: "10px",
+              maxWidth: "1100px",
             }}
           >
-            Caricamento storico...
-          </p>
-        </div>
-      </main>
+            <h2>
+              ARMERIA 200
+            </h2>
+
+            <p
+              style={{
+                color: "#777",
+                marginTop: "10px",
+              }}
+            >
+              Caricamento storico...
+            </p>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -291,43 +290,35 @@ export default function StoricoPage() {
     );
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "30px",
-      }}
-    >
-      <div className="container">
+    <>
+      <Sidebar />
 
-        {/* HEADER */}
-
+      <main
+        style={{
+          minHeight: "100vh",
+          marginLeft: "250px",
+          padding: "30px",
+        }}
+      >
         <div
+          className="container"
           style={{
-            display: "flex",
-
-            justifyContent:
-              "space-between",
-
-            alignItems: "center",
-
-            gap: "20px",
-
-            flexWrap: "wrap",
-
-            marginBottom: "35px",
+            maxWidth: "1100px",
           }}
         >
-          <div>
+          {/* HEADER */}
+
+          <div
+            style={{
+              marginBottom: "35px",
+            }}
+          >
             <div
               style={{
                 color: "#8b1e1e",
-
                 fontSize: "12px",
-
                 fontWeight: "bold",
-
                 letterSpacing: "4px",
-
                 marginBottom: "6px",
               }}
             >
@@ -345,441 +336,420 @@ export default function StoricoPage() {
             </p>
           </div>
 
-          <button
-            className="btn btn-dark"
-            onClick={() =>
-              router.push(
-                "/dashboard"
-              )
-            }
+          {/* RIEPILOGO */}
+
+          <div
+            style={{
+              display: "grid",
+
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(220px, 1fr))",
+
+              gap: "15px",
+
+              marginBottom: "30px",
+            }}
           >
-            ← Dashboard
-          </button>
-        </div>
+            <div className="card">
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform:
+                    "uppercase",
+                  letterSpacing:
+                    "1.5px",
+                }}
+              >
+                Fatture valide
+              </div>
 
-        {/* RIEPILOGO */}
+              <div
+                style={{
+                  fontSize: "28px",
+                  fontWeight: "800",
+                  marginTop: "8px",
+                }}
+              >
+                {
+                  fattureValide.length
+                }
+              </div>
+            </div>
 
-        <div
-          style={{
-            display: "grid",
+            <div className="card">
+              <div
+                style={{
+                  color: "#777",
+                  fontSize: "11px",
+                  textTransform:
+                    "uppercase",
+                  letterSpacing:
+                    "1.5px",
+                }}
+              >
+                Fatturato
+              </div>
 
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
+              <div
+                style={{
+                  fontSize: "28px",
+                  fontWeight: "800",
+                  marginTop: "8px",
+                }}
+              >
+                {formattaSoldi(
+                  totaleStorico
+                )}
+              </div>
+            </div>
+          </div>
 
-            gap: "15px",
+          {/* ERRORE */}
 
-            marginBottom: "30px",
-          }}
-        >
-          <div className="card">
+          {errore && (
             <div
+              className="error-message"
               style={{
+                marginBottom:
+                  "20px",
+              }}
+            >
+              {errore}
+            </div>
+          )}
+
+          {/* FATTURE */}
+
+          {fatture.length === 0 ? (
+            <div
+              className="card"
+              style={{
+                textAlign:
+                  "center",
+
                 color: "#777",
-
-                fontSize: "11px",
-
-                textTransform:
-                  "uppercase",
-
-                letterSpacing:
-                  "1.5px",
               }}
             >
-              Fatture valide
+              Nessuna fattura
+              registrata.
             </div>
-
+          ) : (
             <div
               style={{
-                fontSize: "28px",
+                display: "flex",
 
-                fontWeight: "800",
+                flexDirection:
+                  "column",
 
-                marginTop: "8px",
+                gap: "12px",
               }}
             >
-              {
-                fattureValide.length
-              }
-            </div>
-          </div>
+              {fatture.map(
+                (fattura) => {
+                  const aperta =
+                    fatturaAperta ===
+                    fattura.id;
 
-          <div className="card">
-            <div
-              style={{
-                color: "#777",
+                  const username =
+                    usernameDipendente(
+                      fattura
+                    );
 
-                fontSize: "11px",
+                  const grado =
+                    gradoDipendente(
+                      fattura
+                    );
 
-                textTransform:
-                  "uppercase",
+                  const dipendenteEliminato =
+                    !fattura.employee_id;
 
-                letterSpacing:
-                  "1.5px",
-              }}
-            >
-              Fatturato
-            </div>
-
-            <div
-              style={{
-                fontSize: "28px",
-
-                fontWeight: "800",
-
-                marginTop: "8px",
-              }}
-            >
-              {formattaSoldi(
-                totaleStorico
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ERRORE */}
-
-        {errore && (
-          <div
-            className="error-message"
-            style={{
-              marginBottom:
-                "20px",
-            }}
-          >
-            {errore}
-          </div>
-        )}
-
-        {/* FATTURE */}
-
-        {fatture.length === 0 ? (
-          <div
-            className="card"
-            style={{
-              textAlign:
-                "center",
-
-              color: "#777",
-            }}
-          >
-            Nessuna fattura
-            registrata.
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-
-              flexDirection:
-                "column",
-
-              gap: "12px",
-            }}
-          >
-            {fatture.map(
-              (fattura) => {
-                const aperta =
-                  fatturaAperta ===
-                  fattura.id;
-
-                const username =
-                  usernameDipendente(
-                    fattura
-                  );
-
-                const grado =
-                  gradoDipendente(
-                    fattura
-                  );
-
-                const dipendenteEliminato =
-                  !fattura.employee_id;
-
-                return (
-                  <div
-                    className="card"
-                    key={fattura.id}
-                    style={{
-                      padding:
-                        "20px",
-
-                      opacity:
-                        fattura.annullata
-                          ? 0.55
-                          : 1,
-
-                      border:
-                        fattura.annullata
-                          ? "1px solid rgba(196,42,42,.35)"
-                          : undefined,
-                    }}
-                  >
-                    {/* TESTATA */}
-
+                  return (
                     <div
+                      className="card"
+                      key={fattura.id}
                       style={{
-                        display:
-                          "flex",
+                        padding:
+                          "20px",
 
-                        justifyContent:
-                          "space-between",
+                        opacity:
+                          fattura.annullata
+                            ? 0.55
+                            : 1,
 
-                        alignItems:
-                          "center",
-
-                        gap: "20px",
-
-                        flexWrap:
-                          "wrap",
+                        border:
+                          fattura.annullata
+                            ? "1px solid rgba(196,42,42,.35)"
+                            : undefined,
                       }}
                     >
-                      <div>
-                        <div
-                          style={{
-                            fontSize:
-                              "17px",
+                      {/* TESTATA */}
 
-                            fontWeight:
-                              "800",
-                          }}
-                        >
-                          {formattaSoldi(
-                            fattura.totale
-                          )}
-                        </div>
+                      <div
+                        style={{
+                          display:
+                            "flex",
 
-                        <div
-                          style={{
-                            color:
-                              "#777",
+                          justifyContent:
+                            "space-between",
 
-                            fontSize:
-                              "12px",
+                          alignItems:
+                            "center",
 
-                            marginTop:
-                              "5px",
-                          }}
-                        >
-                          {formattaData(
-                            fattura.created_at
-                          )}
+                          gap: "20px",
 
-                          {admin && (
-                            <>
-                              {" • "}
+                          flexWrap:
+                            "wrap",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontSize:
+                                "17px",
 
-                              {nomeDipendente(
-                                fattura
-                              )}
-                            </>
-                          )}
-                        </div>
+                              fontWeight:
+                                "800",
+                            }}
+                          >
+                            {formattaSoldi(
+                              fattura.totale
+                            )}
+                          </div>
 
-                        {/* DATI DIPENDENTE */}
+                          <div
+                            style={{
+                              color:
+                                "#777",
 
-                        {admin &&
-                          username && (
+                              fontSize:
+                                "12px",
+
+                              marginTop:
+                                "5px",
+                            }}
+                          >
+                            {formattaData(
+                              fattura.created_at
+                            )}
+
+                            {admin && (
+                              <>
+                                {" • "}
+
+                                {nomeDipendente(
+                                  fattura
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          {/* DATI DIPENDENTE */}
+
+                          {admin &&
+                            username && (
+                              <div
+                                style={{
+                                  color:
+                                    "#777",
+
+                                  fontSize:
+                                    "11px",
+
+                                  marginTop:
+                                    "5px",
+                                }}
+                              >
+                                @{username}
+                              </div>
+                            )}
+
+                          {admin &&
+                            grado && (
+                              <div
+                                style={{
+                                  color:
+                                    "#777",
+
+                                  fontSize:
+                                    "11px",
+
+                                  marginTop:
+                                    "3px",
+                                }}
+                              >
+                                {grado}
+                              </div>
+                            )}
+
+                          {/* ACCOUNT ELIMINATO */}
+
+                          {admin &&
+                            dipendenteEliminato && (
+                              <div
+                                style={{
+                                  color:
+                                    "#c42a2a",
+
+                                  fontSize:
+                                    "10px",
+
+                                  fontWeight:
+                                    "900",
+
+                                  marginTop:
+                                    "6px",
+
+                                  letterSpacing:
+                                    "1px",
+                                }}
+                              >
+                                ACCOUNT ELIMINATO
+                              </div>
+                            )}
+
+                          {/* FATTURA ANNULLATA */}
+
+                          {fattura.annullata && (
                             <div
                               style={{
                                 color:
-                                  "#777",
+                                  "#d34b4b",
 
                                 fontSize:
                                   "11px",
-
-                                marginTop:
-                                  "5px",
-                              }}
-                            >
-                              @{username}
-                            </div>
-                          )}
-
-                        {admin &&
-                          grado && (
-                            <div
-                              style={{
-                                color:
-                                  "#777",
-
-                                fontSize:
-                                  "11px",
-
-                                marginTop:
-                                  "3px",
-                              }}
-                            >
-                              {grado}
-                            </div>
-                          )}
-
-                        {/* ACCOUNT ELIMINATO */}
-
-                        {admin &&
-                          dipendenteEliminato && (
-                            <div
-                              style={{
-                                color:
-                                  "#c42a2a",
-
-                                fontSize:
-                                  "10px",
 
                                 fontWeight:
-                                  "900",
+                                  "bold",
 
                                 marginTop:
-                                  "6px",
+                                  "7px",
 
                                 letterSpacing:
                                   "1px",
                               }}
                             >
-                              ACCOUNT ELIMINATO
+                              FATTURA ANNULLATA
                             </div>
                           )}
+                        </div>
 
-                        {/* FATTURA ANNULLATA */}
-
-                        {fattura.annullata && (
-                          <div
-                            style={{
-                              color:
-                                "#d34b4b",
-
-                              fontSize:
-                                "11px",
-
-                              fontWeight:
-                                "bold",
-
-                              marginTop:
-                                "7px",
-
-                              letterSpacing:
-                                "1px",
-                            }}
-                          >
-                            FATTURA ANNULLATA
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        className="btn btn-dark"
-                        onClick={() =>
-                          setFatturaAperta(
-                            aperta
-                              ? null
-                              : fattura.id
-                          )
-                        }
-                      >
-                        {aperta
-                          ? "Chiudi"
-                          : "Dettagli"}
-                      </button>
-                    </div>
-
-                    {/* DETTAGLI */}
-
-                    {aperta && (
-                      <div
-                        style={{
-                          marginTop:
-                            "20px",
-
-                          paddingTop:
-                            "20px",
-
-                          borderTop:
-                            "1px solid #252525",
-                        }}
-                      >
-                        {fattura
-                          .invoice_items
-                          ?.length >
-                        0 ? (
-                          fattura.invoice_items.map(
-                            (item) => (
-                              <div
-                                key={
-                                  item.id
-                                }
-                                style={{
-                                  display:
-                                    "grid",
-
-                                  gridTemplateColumns:
-                                    "1fr auto",
-
-                                  gap:
-                                    "15px",
-
-                                  padding:
-                                    "10px 0",
-
-                                  borderBottom:
-                                    "1px solid #1e1e1e",
-                                }}
-                              >
-                                <div>
-                                  <strong>
-                                    {
-                                      item.nome_prodotto
-                                    }
-                                  </strong>
-
-                                  <div
-                                    style={{
-                                      color:
-                                        "#777",
-
-                                      fontSize:
-                                        "12px",
-
-                                      marginTop:
-                                        "4px",
-                                    }}
-                                  >
-                                    {formattaSoldi(
-                                      item.prezzo_unitario
-                                    )}{" "}
-                                    ×{" "}
-                                    {
-                                      item.quantita
-                                    }
-                                  </div>
-                                </div>
-
-                                <strong>
-                                  {formattaSoldi(
-                                    item.subtotale
-                                  )}
-                                </strong>
-                              </div>
+                        <button
+                          className="btn btn-dark"
+                          onClick={() =>
+                            setFatturaAperta(
+                              aperta
+                                ? null
+                                : fattura.id
                             )
-                          )
-                        ) : (
-                          <div
-                            style={{
-                              color:
-                                "#777",
-                            }}
-                          >
-                            Nessun dettaglio
-                            disponibile.
-                          </div>
-                        )}
+                          }
+                        >
+                          {aperta
+                            ? "Chiudi"
+                            : "Dettagli"}
+                        </button>
                       </div>
-                    )}
-                  </div>
-                );
-              }
-            )}
-          </div>
-        )}
-      </div>
-    </main>
+
+                      {/* DETTAGLI */}
+
+                      {aperta && (
+                        <div
+                          style={{
+                            marginTop:
+                              "20px",
+
+                            paddingTop:
+                              "20px",
+
+                            borderTop:
+                              "1px solid #252525",
+                          }}
+                        >
+                          {fattura
+                            .invoice_items
+                            ?.length >
+                          0 ? (
+                            fattura.invoice_items.map(
+                              (item) => (
+                                <div
+                                  key={
+                                    item.id
+                                  }
+                                  style={{
+                                    display:
+                                      "grid",
+
+                                    gridTemplateColumns:
+                                      "1fr auto",
+
+                                    gap:
+                                      "15px",
+
+                                    padding:
+                                      "10px 0",
+
+                                    borderBottom:
+                                      "1px solid #1e1e1e",
+                                  }}
+                                >
+                                  <div>
+                                    <strong>
+                                      {
+                                        item.nome_prodotto
+                                      }
+                                    </strong>
+
+                                    <div
+                                      style={{
+                                        color:
+                                          "#777",
+
+                                        fontSize:
+                                          "12px",
+
+                                        marginTop:
+                                          "4px",
+                                      }}
+                                    >
+                                      {formattaSoldi(
+                                        item.prezzo_unitario
+                                      )}{" "}
+                                      ×{" "}
+                                      {
+                                        item.quantita
+                                      }
+                                    </div>
+                                  </div>
+
+                                  <strong>
+                                    {formattaSoldi(
+                                      item.subtotale
+                                    )}
+                                  </strong>
+                                </div>
+                              )
+                            )
+                          ) : (
+                            <div
+                              style={{
+                                color:
+                                  "#777",
+                              }}
+                            >
+                              Nessun dettaglio
+                              disponibile.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+    </>
   );
 }
