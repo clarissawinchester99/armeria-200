@@ -13,13 +13,25 @@ export default function CatalogoAdminPage() {
 
   const [errore, setErrore] = useState("");
   const [successo, setSuccesso] = useState("");
+
   const [salvataggio, setSalvataggio] = useState(null);
   const [creazione, setCreazione] = useState(false);
+
+  const [salvataggioCategoria, setSalvataggioCategoria] =
+    useState(null);
+
+  const [creazioneCategoria, setCreazioneCategoria] =
+    useState(false);
 
   const [nuovoProdotto, setNuovoProdotto] = useState({
     nome: "",
     prezzo: "",
     category_id: "",
+    ordine: 0,
+  });
+
+  const [nuovaCategoria, setNuovaCategoria] = useState({
+    nome: "",
     ordine: 0,
   });
 
@@ -41,12 +53,14 @@ export default function CatalogoAdminPage() {
         return;
       }
 
-      const { data: profilo, error: profiloError } =
-        await supabase
-          .from("profiles")
-          .select("ruolo, attivo")
-          .eq("id", user.id)
-          .single();
+      const {
+        data: profilo,
+        error: profiloError,
+      } = await supabase
+        .from("profiles")
+        .select("ruolo, attivo")
+        .eq("id", user.id)
+        .single();
 
       if (
         profiloError ||
@@ -58,66 +72,7 @@ export default function CatalogoAdminPage() {
         return;
       }
 
-      const { data: categorieData, error: categorieError } =
-        await supabase
-          .from("categories")
-          .select("*")
-          .order("ordine", {
-            ascending: true,
-          });
-
-      if (categorieError) {
-        throw categorieError;
-      }
-
-      setCategorie(categorieData || []);
-
-      const { data: prodottiData, error: prodottiError } =
-        await supabase
-          .from("products")
-          .select(`
-            id,
-            nome,
-            prezzo,
-            category_id,
-            attivo,
-            ordine,
-            categories (
-              nome,
-              ordine
-            )
-          `)
-          .order("ordine", {
-            ascending: true,
-          });
-
-      if (prodottiError) {
-        throw prodottiError;
-      }
-
-      const ordinati = (prodottiData || []).sort((a, b) => {
-        const ordineCategoriaA =
-          Number(a.categories?.ordine || 0);
-
-        const ordineCategoriaB =
-          Number(b.categories?.ordine || 0);
-
-        if (ordineCategoriaA !== ordineCategoriaB) {
-          return ordineCategoriaA - ordineCategoriaB;
-        }
-
-        return Number(a.ordine || 0) - Number(b.ordine || 0);
-      });
-
-      setProdotti(ordinati);
-
-      setNuovoProdotto((precedente) => ({
-        ...precedente,
-        category_id:
-          precedente.category_id ||
-          categorieData?.[0]?.id ||
-          "",
-      }));
+      await caricaDatiCatalogo();
     } catch (error) {
       console.error(error);
 
@@ -129,6 +84,106 @@ export default function CatalogoAdminPage() {
     }
   }
 
+  async function caricaDatiCatalogo() {
+    const {
+      data: categorieData,
+      error: categorieError,
+    } = await supabase
+      .from("categories")
+      .select("*")
+      .order("ordine", {
+        ascending: true,
+      });
+
+    if (categorieError) {
+      throw categorieError;
+    }
+
+    const categorieCaricate =
+      categorieData || [];
+
+    setCategorie(categorieCaricate);
+
+    const {
+      data: prodottiData,
+      error: prodottiError,
+    } = await supabase
+      .from("products")
+      .select(`
+        id,
+        nome,
+        prezzo,
+        category_id,
+        attivo,
+        ordine,
+        categories (
+          nome,
+          ordine
+        )
+      `)
+      .order("ordine", {
+        ascending: true,
+      });
+
+    if (prodottiError) {
+      throw prodottiError;
+    }
+
+    const ordinati = (prodottiData || []).sort(
+      (a, b) => {
+        const ordineCategoriaA = Number(
+          a.categories?.ordine || 0
+        );
+
+        const ordineCategoriaB = Number(
+          b.categories?.ordine || 0
+        );
+
+        if (
+          ordineCategoriaA !==
+          ordineCategoriaB
+        ) {
+          return (
+            ordineCategoriaA -
+            ordineCategoriaB
+          );
+        }
+
+        return (
+          Number(a.ordine || 0) -
+          Number(b.ordine || 0)
+        );
+      }
+    );
+
+    setProdotti(ordinati);
+
+    setNuovoProdotto((precedente) => {
+      const categoriaAttualeEsiste =
+        categorieCaricate.some(
+          (categoria) =>
+            Number(categoria.id) ===
+              Number(precedente.category_id) &&
+            categoria.attiva
+        );
+
+      if (categoriaAttualeEsiste) {
+        return precedente;
+      }
+
+      const primaCategoriaAttiva =
+        categorieCaricate.find(
+          (categoria) => categoria.attiva
+        );
+
+      return {
+        ...precedente,
+        category_id:
+          primaCategoriaAttiva?.id || "",
+      };
+    });
+  }
+
   function formattaSoldi(numero) {
     return new Intl.NumberFormat("it-IT", {
       style: "currency",
@@ -137,7 +192,220 @@ export default function CatalogoAdminPage() {
     }).format(Number(numero || 0));
   }
 
-  function modificaNuovoProdotto(campo, valore) {
+  // ==========================================
+  // CATEGORIE
+  // ==========================================
+
+  function modificaNuovaCategoria(campo, valore) {
+    setNuovaCategoria((precedente) => ({
+      ...precedente,
+      [campo]: valore,
+    }));
+  }
+
+  async function creaCategoria(e) {
+    e.preventDefault();
+
+    setErrore("");
+    setSuccesso("");
+    setCreazioneCategoria(true);
+
+    try {
+      const nome =
+        nuovaCategoria.nome.trim();
+
+      const ordine = Number(
+        nuovaCategoria.ordine || 0
+      );
+
+      if (!nome) {
+        throw new Error(
+          "Inserisci il nome della categoria."
+        );
+      }
+
+      if (
+        Number.isNaN(ordine) ||
+        ordine < 0
+      ) {
+        throw new Error(
+          "Inserisci un ordine valido."
+        );
+      }
+
+      const { error } = await supabase
+        .from("categories")
+        .insert({
+          nome,
+          ordine,
+          attiva: true,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      setSuccesso(
+        `Categoria "${nome}" creata correttamente.`
+      );
+
+      setNuovaCategoria({
+        nome: "",
+        ordine: 0,
+      });
+
+      await caricaDatiCatalogo();
+    } catch (error) {
+      console.error(error);
+
+      if (error.code === "23505") {
+        setErrore(
+          "Esiste già una categoria con questo nome."
+        );
+      } else {
+        setErrore(
+          error.message ||
+            "Errore durante la creazione della categoria."
+        );
+      }
+    } finally {
+      setCreazioneCategoria(false);
+    }
+  }
+
+  function modificaCategoriaLocale(
+    id,
+    campo,
+    valore
+  ) {
+    setCategorie((precedenti) =>
+      precedenti.map((categoria) =>
+        categoria.id === id
+          ? {
+              ...categoria,
+              [campo]: valore,
+            }
+          : categoria
+      )
+    );
+  }
+
+  async function salvaCategoria(categoria) {
+    setErrore("");
+    setSuccesso("");
+    setSalvataggioCategoria(
+      categoria.id
+    );
+
+    try {
+      const nome = String(
+        categoria.nome || ""
+      ).trim();
+
+      const ordine = Number(
+        categoria.ordine || 0
+      );
+
+      if (!nome) {
+        throw new Error(
+          "Il nome della categoria non può essere vuoto."
+        );
+      }
+
+      if (
+        Number.isNaN(ordine) ||
+        ordine < 0
+      ) {
+        throw new Error(
+          "L'ordine della categoria non è valido."
+        );
+      }
+
+      const { error } = await supabase
+        .from("categories")
+        .update({
+          nome,
+          ordine,
+        })
+        .eq("id", categoria.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setSuccesso(
+        `Categoria "${nome}" aggiornata correttamente.`
+      );
+
+      await caricaDatiCatalogo();
+    } catch (error) {
+      console.error(error);
+
+      if (error.code === "23505") {
+        setErrore(
+          "Esiste già una categoria con questo nome."
+        );
+      } else {
+        setErrore(
+          error.message ||
+            "Errore durante il salvataggio della categoria."
+        );
+      }
+    } finally {
+      setSalvataggioCategoria(null);
+    }
+  }
+
+  async function cambiaStatoCategoria(
+    categoria
+  ) {
+    setErrore("");
+    setSuccesso("");
+    setSalvataggioCategoria(
+      categoria.id
+    );
+
+    try {
+      const nuovoStato =
+        !categoria.attiva;
+
+      const { error } = await supabase
+        .from("categories")
+        .update({
+          attiva: nuovoStato,
+        })
+        .eq("id", categoria.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setSuccesso(
+        nuovoStato
+          ? `Categoria "${categoria.nome}" riattivata.`
+          : `Categoria "${categoria.nome}" disattivata.`
+      );
+
+      await caricaDatiCatalogo();
+    } catch (error) {
+      console.error(error);
+
+      setErrore(
+        "Errore durante la modifica dello stato della categoria."
+      );
+    } finally {
+      setSalvataggioCategoria(null);
+    }
+  }
+
+  // ==========================================
+  // PRODOTTI
+  // ==========================================
+
+  function modificaNuovoProdotto(
+    campo,
+    valore
+  ) {
     setNuovoProdotto((precedente) => ({
       ...precedente,
       [campo]: valore,
@@ -152,11 +420,17 @@ export default function CatalogoAdminPage() {
     setCreazione(true);
 
     try {
-      const nome = nuovoProdotto.nome.trim();
-      const prezzo = Number(nuovoProdotto.prezzo);
+      const nome =
+        nuovoProdotto.nome.trim();
+
+      const prezzo = Number(
+        nuovoProdotto.prezzo
+      );
+
       const categoryId = Number(
         nuovoProdotto.category_id
       );
+
       const ordine = Number(
         nuovoProdotto.ordine || 0
       );
@@ -200,15 +474,20 @@ export default function CatalogoAdminPage() {
         `${nome} aggiunto al catalogo.`
       );
 
+      const primaCategoriaAttiva =
+        categorie.find(
+          (categoria) => categoria.attiva
+        );
+
       setNuovoProdotto({
         nome: "",
         prezzo: "",
         category_id:
-          categorie[0]?.id || "",
+          primaCategoriaAttiva?.id || "",
         ordine: 0,
       });
 
-      await caricaCatalogo();
+      await caricaDatiCatalogo();
     } catch (error) {
       console.error(error);
 
@@ -227,7 +506,11 @@ export default function CatalogoAdminPage() {
     }
   }
 
-  function modificaProdottoLocale(id, campo, valore) {
+  function modificaProdottoLocale(
+    id,
+    campo,
+    valore
+  ) {
     setProdotti((precedenti) =>
       precedenti.map((prodotto) =>
         prodotto.id === id
@@ -246,17 +529,21 @@ export default function CatalogoAdminPage() {
     setSalvataggio(prodotto.id);
 
     try {
-      const nome =
-        String(prodotto.nome || "").trim();
+      const nome = String(
+        prodotto.nome || ""
+      ).trim();
 
-      const prezzo =
-        Number(prodotto.prezzo);
+      const prezzo = Number(
+        prodotto.prezzo
+      );
 
-      const ordine =
-        Number(prodotto.ordine || 0);
+      const ordine = Number(
+        prodotto.ordine || 0
+      );
 
-      const categoryId =
-        Number(prodotto.category_id);
+      const categoryId = Number(
+        prodotto.category_id
+      );
 
       if (!nome) {
         throw new Error(
@@ -270,6 +557,12 @@ export default function CatalogoAdminPage() {
       ) {
         throw new Error(
           "Il prezzo non è valido."
+        );
+      }
+
+      if (!categoryId) {
+        throw new Error(
+          "Seleziona una categoria valida."
         );
       }
 
@@ -291,7 +584,7 @@ export default function CatalogoAdminPage() {
         `${nome} aggiornato correttamente.`
       );
 
-      await caricaCatalogo();
+      await caricaDatiCatalogo();
     } catch (error) {
       console.error(error);
 
@@ -304,7 +597,9 @@ export default function CatalogoAdminPage() {
     }
   }
 
-  async function cambiaStatoProdotto(prodotto) {
+  async function cambiaStatoProdotto(
+    prodotto
+  ) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(prodotto.id);
@@ -330,7 +625,7 @@ export default function CatalogoAdminPage() {
           : `${prodotto.nome} disattivato.`
       );
 
-      await caricaCatalogo();
+      await caricaDatiCatalogo();
     } catch (error) {
       console.error(error);
 
@@ -361,6 +656,11 @@ export default function CatalogoAdminPage() {
     );
   }
 
+  const categorieAttive =
+    categorie.filter(
+      (categoria) => categoria.attiva
+    );
+
   return (
     <main
       style={{
@@ -379,7 +679,8 @@ export default function CatalogoAdminPage() {
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent:
+              "space-between",
             alignItems: "center",
             gap: "20px",
             flexWrap: "wrap",
@@ -404,7 +705,8 @@ export default function CatalogoAdminPage() {
             </h1>
 
             <p className="subtitle">
-              Prodotti e prezzi dell'Armeria 200
+              Categorie, prodotti e prezzi
+              dell'Armeria 200
             </p>
           </div>
 
@@ -417,6 +719,8 @@ export default function CatalogoAdminPage() {
             ← Pannello Admin
           </button>
         </div>
+
+        {/* MESSAGGI */}
 
         {errore && (
           <div
@@ -439,6 +743,270 @@ export default function CatalogoAdminPage() {
             {successo}
           </div>
         )}
+
+        {/* NUOVA CATEGORIA */}
+
+        <div
+          className="card"
+          style={{
+            marginBottom: "25px",
+            border:
+              "1px solid rgba(139,30,30,.35)",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: "22px",
+            }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "11px",
+                fontWeight: "bold",
+                letterSpacing: "3px",
+                marginBottom: "7px",
+              }}
+            >
+              NUOVA CATEGORIA
+            </div>
+
+            <h2>Aggiungi categoria</h2>
+
+            <p
+              style={{
+                color: "#777",
+                fontSize: "13px",
+                marginTop: "7px",
+              }}
+            >
+              Crea una nuova sezione del
+              catalogo.
+            </p>
+          </div>
+
+          <form onSubmit={creaCategoria}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "2fr 1fr",
+                gap: "15px",
+              }}
+            >
+              <div className="form-group">
+                <label>
+                  Nome categoria
+                </label>
+
+                <input
+                  type="text"
+                  value={
+                    nuovaCategoria.nome
+                  }
+                  onChange={(e) =>
+                    modificaNuovaCategoria(
+                      "nome",
+                      e.target.value
+                    )
+                  }
+                  placeholder="es. Munizioni"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Ordine</label>
+
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={
+                    nuovaCategoria.ordine
+                  }
+                  onChange={(e) =>
+                    modificaNuovaCategoria(
+                      "ordine",
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={
+                creazioneCategoria
+              }
+            >
+              {creazioneCategoria
+                ? "Creazione..."
+                : "Aggiungi categoria"}
+            </button>
+          </form>
+        </div>
+
+        {/* GESTIONE CATEGORIE */}
+
+        <div
+          className="card"
+          style={{
+            marginBottom: "35px",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: "22px",
+            }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "11px",
+                fontWeight: "bold",
+                letterSpacing: "3px",
+                marginBottom: "7px",
+              }}
+            >
+              CATEGORIE
+            </div>
+
+            <h2>Gestione categorie</h2>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            {categorie.map(
+              (categoria) => (
+                <div
+                  key={categoria.id}
+                  style={{
+                    padding: "15px",
+                    border:
+                      "1px solid rgba(255,255,255,.08)",
+                    borderRadius: "8px",
+                    opacity:
+                      categoria.attiva
+                        ? 1
+                        : 0.55,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "2fr 120px",
+                      gap: "15px",
+                    }}
+                  >
+                    <div className="form-group">
+                      <label>
+                        Categoria
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          categoria.nome
+                        }
+                        onChange={(e) =>
+                          modificaCategoriaLocale(
+                            categoria.id,
+                            "nome",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>
+                        Ordine
+                      </label>
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={
+                          categoria.ordine
+                        }
+                        onChange={(e) =>
+                          modificaCategoriaLocale(
+                            categoria.id,
+                            "ordine",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#777",
+                      fontSize: "12px",
+                      marginBottom:
+                        "15px",
+                    }}
+                  >
+                    {categoria.attiva
+                      ? "CATEGORIA ATTIVA"
+                      : "CATEGORIA DISATTIVATA"}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <button
+                      className="btn btn-primary"
+                      disabled={
+                        salvataggioCategoria ===
+                        categoria.id
+                      }
+                      onClick={() =>
+                        salvaCategoria(
+                          categoria
+                        )
+                      }
+                    >
+                      Salva modifiche
+                    </button>
+
+                    <button
+                      className="btn btn-dark"
+                      disabled={
+                        salvataggioCategoria ===
+                        categoria.id
+                      }
+                      onClick={() =>
+                        cambiaStatoCategoria(
+                          categoria
+                        )
+                      }
+                    >
+                      {categoria.attiva
+                        ? "Disattiva"
+                        : "Riattiva"}
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </div>
 
         {/* NUOVO PRODOTTO */}
 
@@ -467,120 +1035,136 @@ export default function CatalogoAdminPage() {
               NUOVO ARTICOLO
             </div>
 
-            <h2>
-              Aggiungi prodotto
-            </h2>
+            <h2>Aggiungi prodotto</h2>
           </div>
 
-          <form onSubmit={creaProdotto}>
+          {categorieAttive.length ===
+          0 ? (
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: "15px",
+                color: "#777",
               }}
             >
-              <div className="form-group">
-                <label>Nome</label>
-
-                <input
-                  type="text"
-                  value={
-                    nuovoProdotto.nome
-                  }
-                  onChange={(e) =>
-                    modificaNuovoProdotto(
-                      "nome",
-                      e.target.value
-                    )
-                  }
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Categoria</label>
-
-                <select
-                  value={
-                    nuovoProdotto.category_id
-                  }
-                  onChange={(e) =>
-                    modificaNuovoProdotto(
-                      "category_id",
-                      e.target.value
-                    )
-                  }
-                  required
-                >
-                  {categorie
-                    .filter(
-                      (categoria) =>
-                        categoria.attiva
-                    )
-                    .map((categoria) => (
-                      <option
-                        key={categoria.id}
-                        value={categoria.id}
-                      >
-                        {categoria.nome}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Prezzo</label>
-
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={
-                    nuovoProdotto.prezzo
-                  }
-                  onChange={(e) =>
-                    modificaNuovoProdotto(
-                      "prezzo",
-                      e.target.value
-                    )
-                  }
-                  placeholder="es. 15000"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Ordine</label>
-
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={
-                    nuovoProdotto.ordine
-                  }
-                  onChange={(e) =>
-                    modificaNuovoProdotto(
-                      "ordine",
-                      e.target.value
-                    )
-                  }
-                />
-              </div>
+              Devi avere almeno una
+              categoria attiva per
+              aggiungere un prodotto.
             </div>
+          ) : (
+            <form onSubmit={creaProdotto}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: "15px",
+                }}
+              >
+                <div className="form-group">
+                  <label>Nome</label>
 
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={creazione}
-            >
-              {creazione
-                ? "Aggiunta..."
-                : "Aggiungi prodotto"}
-            </button>
-          </form>
+                  <input
+                    type="text"
+                    value={
+                      nuovoProdotto.nome
+                    }
+                    onChange={(e) =>
+                      modificaNuovoProdotto(
+                        "nome",
+                        e.target.value
+                      )
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    Categoria
+                  </label>
+
+                  <select
+                    value={
+                      nuovoProdotto.category_id
+                    }
+                    onChange={(e) =>
+                      modificaNuovoProdotto(
+                        "category_id",
+                        e.target.value
+                      )
+                    }
+                    required
+                  >
+                    {categorieAttive.map(
+                      (categoria) => (
+                        <option
+                          key={
+                            categoria.id
+                          }
+                          value={
+                            categoria.id
+                          }
+                        >
+                          {
+                            categoria.nome
+                          }
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Prezzo</label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={
+                      nuovoProdotto.prezzo
+                    }
+                    onChange={(e) =>
+                      modificaNuovoProdotto(
+                        "prezzo",
+                        e.target.value
+                      )
+                    }
+                    placeholder="es. 15000"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Ordine</label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={
+                      nuovoProdotto.ordine
+                    }
+                    onChange={(e) =>
+                      modificaNuovoProdotto(
+                        "ordine",
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={creazione}
+              >
+                {creazione
+                  ? "Aggiunta..."
+                  : "Aggiungi prodotto"}
+              </button>
+            </form>
+          )}
         </div>
 
         {/* CATALOGO */}
@@ -600,6 +1184,10 @@ export default function CatalogoAdminPage() {
               key={categoria.id}
               style={{
                 marginBottom: "35px",
+                opacity:
+                  categoria.attiva
+                    ? 1
+                    : 0.65,
               }}
             >
               <div
@@ -609,18 +1197,40 @@ export default function CatalogoAdminPage() {
                     "space-between",
                   alignItems: "center",
                   marginBottom: "13px",
+                  gap: "15px",
                 }}
               >
-                <h2
-                  style={{
-                    fontSize: "20px",
-                    textTransform:
-                      "uppercase",
-                    letterSpacing: "2px",
-                  }}
-                >
-                  {categoria.nome}
-                </h2>
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "20px",
+                      textTransform:
+                        "uppercase",
+                      letterSpacing:
+                        "2px",
+                    }}
+                  >
+                    {categoria.nome}
+                  </h2>
+
+                  {!categoria.attiva && (
+                    <div
+                      style={{
+                        color:
+                          "#c42a2a",
+                        fontSize:
+                          "11px",
+                        fontWeight:
+                          "900",
+                        marginTop:
+                          "4px",
+                      }}
+                    >
+                      CATEGORIA
+                      DISATTIVATA
+                    </div>
+                  )}
+                </div>
 
                 <div
                   style={{
@@ -650,7 +1260,8 @@ export default function CatalogoAdminPage() {
                 <div
                   style={{
                     display: "flex",
-                    flexDirection: "column",
+                    flexDirection:
+                      "column",
                     gap: "12px",
                   }}
                 >
@@ -670,7 +1281,7 @@ export default function CatalogoAdminPage() {
                           style={{
                             display: "grid",
                             gridTemplateColumns:
-                              "2fr 1fr 100px",
+                              "2fr 1fr 1fr 100px",
                             gap: "15px",
                             alignItems:
                               "end",
@@ -694,6 +1305,48 @@ export default function CatalogoAdminPage() {
                                 )
                               }
                             />
+                          </div>
+
+                          <div className="form-group">
+                            <label>
+                              Categoria
+                            </label>
+
+                            <select
+                              value={
+                                prodotto.category_id
+                              }
+                              onChange={(e) =>
+                                modificaProdottoLocale(
+                                  prodotto.id,
+                                  "category_id",
+                                  e.target
+                                    .value
+                                )
+                              }
+                            >
+                              {categorie.map(
+                                (
+                                  categoriaOpzione
+                                ) => (
+                                  <option
+                                    key={
+                                      categoriaOpzione.id
+                                    }
+                                    value={
+                                      categoriaOpzione.id
+                                    }
+                                  >
+                                    {
+                                      categoriaOpzione.nome
+                                    }
+                                    {!categoriaOpzione.attiva
+                                      ? " (disattivata)"
+                                      : ""}
+                                  </option>
+                                )
+                              )}
+                            </select>
                           </div>
 
                           <div className="form-group">
@@ -746,7 +1399,8 @@ export default function CatalogoAdminPage() {
                         <div
                           style={{
                             color: "#777",
-                            fontSize: "12px",
+                            fontSize:
+                              "12px",
                             marginBottom:
                               "15px",
                           }}
@@ -754,7 +1408,8 @@ export default function CatalogoAdminPage() {
                           Prezzo attuale:{" "}
                           <strong
                             style={{
-                              color: "#fff",
+                              color:
+                                "#fff",
                             }}
                           >
                             {formattaSoldi(
@@ -770,7 +1425,8 @@ export default function CatalogoAdminPage() {
                           style={{
                             display: "flex",
                             gap: "10px",
-                            flexWrap: "wrap",
+                            flexWrap:
+                              "wrap",
                           }}
                         >
                           <button
