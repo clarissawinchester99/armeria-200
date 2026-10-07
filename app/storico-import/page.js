@@ -229,18 +229,11 @@ export default function StoricoImportPage() {
   // FORMATTA SOLDI
   // ==============================
 
-  function formattaSoldi(numero) {
-    return new Intl.NumberFormat(
-      "it-IT",
-      {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
-      }
-    ).format(
-      Number(numero || 0)
-    );
-  }
+function formattaSoldi(numero) {
+  return `$${new Intl.NumberFormat("it-IT", {
+    maximumFractionDigits: 2,
+  }).format(Number(numero || 0))}`;
+}
 
   // ==============================
   // FORMATTA DATA
