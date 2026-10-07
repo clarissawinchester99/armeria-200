@@ -119,11 +119,11 @@ export default function DashboardPage() {
     }
   }
 
-function formattaSoldi(numero) {
-  return `$${new Intl.NumberFormat("it-IT", {
-    maximumFractionDigits: 2,
-  }).format(Number(numero || 0))}`;
-}
+  function formattaSoldi(numero) {
+    return `$${new Intl.NumberFormat("it-IT", {
+      maximumFractionDigits: 2,
+    }).format(Number(numero || 0))}`;
+  }
 
   // ==============================
   // LOADING
@@ -144,10 +144,19 @@ function formattaSoldi(numero) {
           <div
             className="container"
             style={{
-              maxWidth: "1100px",
+              maxWidth: "1180px",
             }}
           >
-            <h2>ARMERIA 200</h2>
+            <div
+              style={{
+                color: "#d99a2b",
+                fontSize: "22px",
+                fontWeight: "900",
+                letterSpacing: "1px",
+              }}
+            >
+              ARMERIA 200
+            </div>
 
             <p
               style={{
@@ -193,69 +202,189 @@ function formattaSoldi(numero) {
         <div
           className="container"
           style={{
-            maxWidth: "1100px",
+            maxWidth: "1180px",
           }}
         >
-          {/* HEADER */}
+          {/* ======================== */}
+          {/* BANNER */}
+          {/* ======================== */}
 
           <div
             style={{
-              marginBottom: "35px",
+              position: "relative",
+
+              width: "100%",
+              height: "300px",
+
+              marginBottom: "28px",
+
+              borderRadius: "10px",
+
+              overflow: "hidden",
+
+              border:
+                "1px solid rgba(217,154,43,.30)",
+
+              backgroundColor: "#050505",
+
+              backgroundImage:
+                "linear-gradient(90deg, rgba(0,0,0,.80) 0%, rgba(0,0,0,.35) 45%, rgba(0,0,0,.12) 100%), url('/armeria-banner.png')",
+
+              backgroundSize: "cover",
+
+              backgroundPosition: "center",
+
+              boxShadow:
+                "0 20px 55px rgba(0,0,0,.60), 0 0 28px rgba(180,14,14,.10)",
             }}
           >
+            {/* OMBRA BASSA */}
+
             <div
               style={{
-                color: "#c42a2a",
-                fontSize: "12px",
-                fontWeight: "bold",
-                letterSpacing: "4px",
-                marginBottom: "6px",
+                position: "absolute",
+
+                left: 0,
+                right: 0,
+                bottom: 0,
+
+                height: "120px",
+
+                background:
+                  "linear-gradient(transparent, rgba(0,0,0,.88))",
+
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* LINEA SUPERIORE */}
+
+            <div
+              style={{
+                position: "absolute",
+
+                top: 0,
+                left: 0,
+                right: 0,
+
+                height: "3px",
+
+                background:
+                  "linear-gradient(90deg, #7b0808, #ed1c16, #d99a2b, #ed1c16, #7b0808)",
+
+                boxShadow:
+                  "0 0 15px rgba(237,28,22,.45)",
+              }}
+            />
+
+            {/* TESTO BANNER */}
+
+            <div
+              style={{
+                position: "absolute",
+
+                left: "32px",
+                bottom: "28px",
+
+                zIndex: 2,
               }}
             >
-              LOS SANTOS
+              <div
+                style={{
+                  color: "#d99a2b",
+
+                  fontSize: "10px",
+                  fontWeight: "900",
+
+                  letterSpacing: "4px",
+
+                  marginBottom: "8px",
+
+                  textTransform: "uppercase",
+                }}
+              >
+                Gestionale Dipendenti
+              </div>
+
+              <div
+                style={{
+                  color: "#ffffff",
+
+                  fontSize: "30px",
+                  fontWeight: "900",
+
+                  letterSpacing: "1px",
+
+                  lineHeight: "1.1",
+
+                  textShadow:
+                    "0 3px 10px rgba(0,0,0,.95)",
+                }}
+              >
+                DASHBOARD
+              </div>
+
+              <div
+                style={{
+                  width: "85px",
+                  height: "2px",
+
+                  marginTop: "13px",
+
+                  background:
+                    "linear-gradient(90deg, #ed1c16, #d99a2b)",
+                }}
+              />
             </div>
-
-            <h1 className="title">
-              DASHBOARD
-            </h1>
-
-            <p className="subtitle">
-              Gestionale Armeria 200
-            </p>
           </div>
 
+          {/* ======================== */}
           {/* PROFILO */}
+          {/* ======================== */}
 
           <div
             className="card"
             style={{
-              marginBottom: "25px",
+              marginBottom: "28px",
+
+              padding: "25px 28px",
 
               border:
-                "1px solid rgba(139,30,30,.35)",
+                "1px solid rgba(217,154,43,.20)",
 
               background:
-                "linear-gradient(135deg, rgba(139,30,30,.08), rgba(0,0,0,0))",
+                "linear-gradient(110deg, rgba(125,8,8,.10), rgba(12,12,12,.96) 45%, rgba(217,154,43,.025))",
             }}
           >
             <div
               style={{
                 display: "flex",
+
                 justifyContent:
                   "space-between",
+
                 alignItems: "center",
-                gap: "20px",
+
+                gap: "25px",
+
                 flexWrap: "wrap",
               }}
             >
+              {/* UTENTE */}
+
               <div>
                 <div
                   style={{
-                    color: "#777",
-                    fontSize: "11px",
+                    color: "#9a8353",
+
+                    fontSize: "9px",
+                    fontWeight: "900",
+
                     textTransform:
                       "uppercase",
-                    letterSpacing: "2px",
+
+                    letterSpacing: "2.5px",
+
                     marginBottom: "8px",
                   }}
                 >
@@ -264,8 +393,12 @@ function formattaSoldi(numero) {
 
                 <div
                   style={{
-                    fontSize: "26px",
+                    color: "#f5f5f5",
+
+                    fontSize: "25px",
                     fontWeight: "900",
+
+                    letterSpacing: ".4px",
                   }}
                 >
                   {nomeCompleto ||
@@ -274,14 +407,18 @@ function formattaSoldi(numero) {
 
                 <div
                   style={{
-                    color: "#777",
-                    fontSize: "13px",
+                    color: "#707070",
+
+                    fontSize: "12px",
+
                     marginTop: "5px",
                   }}
                 >
                   @{profilo.username}
                 </div>
               </div>
+
+              {/* GRADO */}
 
               <div
                 style={{
@@ -292,43 +429,67 @@ function formattaSoldi(numero) {
                   <div
                     style={{
                       display:
-                        "inline-block",
+                        "inline-flex",
+
+                      alignItems:
+                        "center",
+
+                      gap: "6px",
 
                       background:
-                        "rgba(139,30,30,.18)",
+                        "linear-gradient(90deg, rgba(155,10,10,.20), rgba(217,154,43,.07))",
 
                       border:
-                        "1px solid rgba(196,42,42,.35)",
+                        "1px solid rgba(217,154,43,.25)",
 
-                      color: "#e64b4b",
+                      color: "#d99a2b",
 
                       padding:
-                        "5px 10px",
+                        "4px 9px",
 
                       borderRadius:
-                        "20px",
+                        "4px",
 
-                      fontSize: "10px",
+                      fontSize: "8px",
 
                       fontWeight:
                         "900",
 
                       letterSpacing:
-                        "1px",
+                        "1.5px",
 
                       marginBottom:
                         "8px",
                     }}
                   >
+                    <span
+                      style={{
+                        width: "5px",
+                        height: "5px",
+
+                        borderRadius:
+                          "50%",
+
+                        background:
+                          "#ed1c16",
+
+                        boxShadow:
+                          "0 0 6px #ed1c16",
+                      }}
+                    />
+
                     ADMIN
                   </div>
                 )}
 
                 <div
                   style={{
-                    color: "#fff",
+                    color: "#d99a2b",
+
                     fontSize: "18px",
                     fontWeight: "900",
+
+                    letterSpacing: ".5px",
                   }}
                 >
                   {profilo.grado ||
@@ -337,55 +498,95 @@ function formattaSoldi(numero) {
 
                 <div
                   style={{
-                    color: "#c42a2a",
-                    fontSize: "13px",
-                    fontWeight: "800",
-                    marginTop: "4px",
+                    color: "#b3b3b3",
+
+                    fontSize: "11px",
+                    fontWeight: "700",
+
+                    marginTop: "5px",
                   }}
                 >
-                  Stipendio{" "}
-                  {
-                    profilo.percentuale_stipendio
-                  }
-                  %
+                  Percentuale stipendio{" "}
+                  <span
+                    style={{
+                      color: "#ed1c16",
+                      fontWeight: "900",
+                    }}
+                  >
+                    {
+                      profilo.percentuale_stipendio
+                    }
+                    %
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* ======================== */}
           {/* TITOLO STATISTICHE */}
+          {/* ======================== */}
 
           <div
             style={{
-              marginBottom: "15px",
-              marginTop: "35px",
+              display: "flex",
+
+              alignItems: "center",
+
+              gap: "12px",
+
+              marginTop: "34px",
+              marginBottom: "17px",
             }}
           >
-            <div
-              style={{
-                color: "#555",
-                fontSize: "10px",
-                fontWeight: "900",
-                letterSpacing: "3px",
-                marginBottom: "7px",
-              }}
-            >
-              RIEPILOGO
+            <div>
+              <div
+                style={{
+                  color: "#9a1111",
+
+                  fontSize: "9px",
+                  fontWeight: "900",
+
+                  letterSpacing: "3px",
+
+                  marginBottom: "5px",
+                }}
+              >
+                RIEPILOGO
+              </div>
+
+              <h2
+                style={{
+                  color: "#e5e5e5",
+
+                  fontSize: "17px",
+
+                  textTransform:
+                    "uppercase",
+
+                  letterSpacing: "1px",
+                }}
+              >
+                Le tue statistiche
+              </h2>
             </div>
 
-            <h2
+            <div
               style={{
-                fontSize: "18px",
-                textTransform:
-                  "uppercase",
-                letterSpacing: "2px",
+                flex: 1,
+                height: "1px",
+
+                marginTop: "15px",
+
+                background:
+                  "linear-gradient(90deg, rgba(217,154,43,.25), rgba(180,14,14,.10), transparent)",
               }}
-            >
-              Le tue statistiche
-            </h2>
+            />
           </div>
 
+          {/* ======================== */}
           {/* STATISTICHE */}
+          {/* ======================== */}
 
           <div
             style={{
@@ -400,6 +601,7 @@ function formattaSoldi(numero) {
             }}
           >
             <StatCard
+              simbolo="$"
               titolo="Fatturato personale"
               valore={formattaSoldi(
                 stats.fatturato
@@ -408,6 +610,7 @@ function formattaSoldi(numero) {
             />
 
             <StatCard
+              simbolo="%"
               titolo="Stipendio maturato"
               valore={formattaSoldi(
                 stats.stipendio
@@ -416,6 +619,7 @@ function formattaSoldi(numero) {
             />
 
             <StatCard
+              simbolo="#"
               titolo="Fatture effettuate"
               valore={
                 stats.numero_fatture
@@ -424,32 +628,65 @@ function formattaSoldi(numero) {
             />
           </div>
 
+          {/* ======================== */}
           {/* INFO */}
+          {/* ======================== */}
 
           <div
             className="card"
             style={{
               marginTop: "20px",
+
+              padding: "25px 28px",
+
               border:
-                "1px solid rgba(255,255,255,.05)",
+                "1px solid rgba(217,154,43,.12)",
+
+              background:
+                "linear-gradient(135deg, rgba(15,15,15,.97), rgba(7,7,7,.98))",
             }}
           >
             <div
               style={{
-                color: "#c42a2a",
-                fontSize: "10px",
-                fontWeight: "900",
-                letterSpacing: "3px",
+                display: "flex",
+
+                alignItems: "center",
+
+                gap: "8px",
+
                 marginBottom: "10px",
               }}
             >
-              ARMERIA 200
+              <div
+                style={{
+                  width: "22px",
+                  height: "2px",
+
+                  background: "#ed1c16",
+                }}
+              />
+
+              <div
+                style={{
+                  color: "#d99a2b",
+
+                  fontSize: "9px",
+                  fontWeight: "900",
+
+                  letterSpacing: "3px",
+                }}
+              >
+                ARMERIA 200
+              </div>
             </div>
 
             <div
               style={{
-                fontSize: "18px",
+                color: "#eeeeee",
+
+                fontSize: "17px",
                 fontWeight: "900",
+
                 marginBottom: "8px",
               }}
             >
@@ -459,9 +696,14 @@ function formattaSoldi(numero) {
             <p
               style={{
                 color: "#777",
-                fontSize: "13px",
+
+                fontSize: "12px",
+
                 lineHeight: "1.7",
+
                 margin: 0,
+
+                maxWidth: "760px",
               }}
             >
               Utilizza il menu a sinistra
@@ -484,6 +726,7 @@ function formattaSoldi(numero) {
 // ==============================
 
 function StatCard({
+  simbolo,
   titolo,
   valore,
   descrizione,
@@ -492,39 +735,123 @@ function StatCard({
     <div
       className="card"
       style={{
-        minHeight: "135px",
+        position: "relative",
+
+        minHeight: "150px",
+
+        padding: "22px",
+
+        overflow: "hidden",
+
+        border:
+          "1px solid rgba(217,154,43,.14)",
+
+        background:
+          "linear-gradient(145deg, rgba(17,17,17,.98), rgba(7,7,7,.98))",
       }}
     >
+      {/* SIMBOLO */}
+
       <div
         style={{
-          color: "#777",
-          fontSize: "10px",
+          position: "absolute",
+
+          top: "17px",
+          right: "18px",
+
+          width: "30px",
+          height: "30px",
+
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+
+          border:
+            "1px solid rgba(180,14,14,.30)",
+
+          borderRadius: "5px",
+
+          background:
+            "rgba(125,8,8,.10)",
+
+          color: "#a91712",
+
+          fontSize: "13px",
+          fontWeight: "900",
+        }}
+      >
+        {simbolo}
+      </div>
+
+      {/* TITOLO */}
+
+      <div
+        style={{
+          color: "#8d8d8d",
+
+          fontSize: "9px",
+          fontWeight: "800",
+
           textTransform: "uppercase",
+
           letterSpacing: "1.5px",
-          marginBottom: "10px",
+
+          marginBottom: "12px",
+
+          paddingRight: "40px",
         }}
       >
         {titolo}
       </div>
 
+      {/* VALORE */}
+
       <div
         style={{
-          fontSize: "28px",
+          color: "#d99a2b",
+
+          fontSize: "27px",
           fontWeight: "900",
+
           marginBottom: "10px",
+
+          letterSpacing: ".3px",
+
+          textShadow:
+            "0 2px 8px rgba(0,0,0,.6)",
         }}
       >
         {valore}
       </div>
 
+      {/* DESCRIZIONE */}
+
       <div
         style={{
-          color: "#555",
-          fontSize: "11px",
+          color: "#595959",
+
+          fontSize: "10px",
         }}
       >
         {descrizione}
       </div>
+
+      {/* DETTAGLIO IN BASSO */}
+
+      <div
+        style={{
+          position: "absolute",
+
+          left: "22px",
+          bottom: 0,
+
+          width: "55px",
+          height: "2px",
+
+          background:
+            "linear-gradient(90deg, #a90d0d, #d99a2b)",
+        }}
+      />
     </div>
   );
 }
