@@ -116,6 +116,11 @@ export default function Sidebar() {
       percorso: "/admin/catalogo",
       icona: "⚙",
     },
+    {
+      nome: "Storico Stipendi",
+      percorso: "/storico-stipendi",
+      icona: "₿",
+    },
   ];
 
   function voceAttiva(percorso) {
@@ -125,6 +130,10 @@ export default function Sidebar() {
 
     if (percorso === "/admin/catalogo") {
       return pathname === "/admin/catalogo";
+    }
+
+    if (percorso === "/storico-stipendi") {
+      return pathname === "/storico-stipendi";
     }
 
     return pathname === percorso;
