@@ -24,6 +24,10 @@ export default function AdminPage() {
   const [fatture, setFatture] = useState([]);
   const [imports, setImports] = useState([]);
 
+  const [fondoCassa, setFondoCassa] = useState(0);
+  const [nuovoFondoCassa, setNuovoFondoCassa] = useState("");
+  const [salvataggioFondo, setSalvataggioFondo] = useState(false);
+
   const [creazione, setCreazione] = useState(false);
   const [salvataggio, setSalvataggio] = useState(null);
   const [eliminazione, setEliminazione] = useState(null);
@@ -59,10 +63,7 @@ export default function AdminPage() {
         return;
       }
 
-      const {
-        data: profilo,
-        error: profiloError,
-      } = await supabase
+      const { data: profilo, error: profiloError } = await supabase
         .from("profiles")
         .select("id, ruolo, attivo")
         .eq("id", user.id)
@@ -82,12 +83,10 @@ export default function AdminPage() {
         caricaDipendenti(),
         caricaFatture(),
         caricaImports(),
+        caricaFondoCassa(),
       ]);
     } catch (error) {
-      console.error(
-        "Errore caricamento Admin:",
-        error
-      );
+      console.error("Errore caricamento Admin:", error);
 
       setErrore(
         error?.message ||
@@ -99,14 +98,82 @@ export default function AdminPage() {
   }
 
   // =========================================================
+  // FONDO CASSA
+  // =========================================================
+
+  async function caricaFondoCassa() {
+    const { data, error } = await supabase
+      .from("impostazioni")
+      .select("valore")
+      .eq("chiave", "fondo_cassa")
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    const valore = Number(data?.valore || 0);
+
+    setFondoCassa(valore);
+    setNuovoFondoCassa(String(valore));
+  }
+
+  async function aggiornaFondoCassa(evento) {
+    evento.preventDefault();
+
+    setErrore("");
+    setSuccesso("");
+
+    const valore = Number(nuovoFondoCassa);
+
+    if (
+      nuovoFondoCassa === "" ||
+      Number.isNaN(valore) ||
+      valore < 0
+    ) {
+      setErrore("Inserisci un importo valido per il fondo cassa.");
+      return;
+    }
+
+    setSalvataggioFondo(true);
+
+    try {
+      const { error } = await supabase
+        .from("impostazioni")
+        .update({
+          valore: valore,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("chiave", "fondo_cassa");
+
+      if (error) {
+        throw error;
+      }
+
+      setFondoCassa(valore);
+      setNuovoFondoCassa(String(valore));
+
+      setSuccesso(
+        `Fondo cassa aggiornato a ${formattaSoldi(valore)}.`
+      );
+    } catch (error) {
+      console.error("Errore aggiornamento fondo cassa:", error);
+
+      setErrore(
+        error?.message ||
+          "Errore durante l'aggiornamento del fondo cassa."
+      );
+    } finally {
+      setSalvataggioFondo(false);
+    }
+  }
+
+  // =========================================================
   // DIPENDENTI
   // =========================================================
 
   async function caricaDipendenti() {
-    const {
-      data: profili,
-      error: profiliError,
-    } = await supabase
+    const { data: profili, error: profiliError } = await supabase
       .from("profiles")
       .select(`
         id,
@@ -127,17 +194,15 @@ export default function AdminPage() {
       throw profiliError;
     }
 
-    const {
-      data: statistiche,
-      error: statisticheError,
-    } = await supabase
-      .from("employee_stats")
-      .select(`
-        id,
-        numero_fatture,
-        fatturato,
-        stipendio
-      `);
+    const { data: statistiche, error: statisticheError } =
+      await supabase
+        .from("employee_stats")
+        .select(`
+          id,
+          numero_fatture,
+          fatturato,
+          stipendio
+        `);
 
     if (statisticheError) {
       throw statisticheError;
@@ -261,29 +326,22 @@ export default function AdminPage() {
         );
       }
 
-      const response = await fetch(
-        "/api/admin/create-user",
-        {
-          method: "POST",
+      const response = await fetch("/api/admin/create-user", {
+        method: "POST",
 
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
 
-          body: JSON.stringify({
-            nome: nuovoDipendente.nome.trim(),
-            cognome: nuovoDipendente.cognome.trim(),
-
-            username: nuovoDipendente.username
-              .trim()
-              .toLowerCase(),
-
-            password: nuovoDipendente.password,
-            grado: nuovoDipendente.grado,
-          }),
-        }
-      );
+        body: JSON.stringify({
+          nome: nuovoDipendente.nome.trim(),
+          cognome: nuovoDipendente.cognome.trim(),
+          username: nuovoDipendente.username.trim().toLowerCase(),
+          password: nuovoDipendente.password,
+          grado: nuovoDipendente.grado,
+        }),
+      });
 
       const risultato = await response.json();
 
@@ -308,10 +366,7 @@ export default function AdminPage() {
 
       await caricaDipendenti();
     } catch (error) {
-      console.error(
-        "Errore creazione dipendente:",
-        error
-      );
+      console.error("Errore creazione dipendente:", error);
 
       setErrore(
         error?.message ||
@@ -349,10 +404,7 @@ export default function AdminPage() {
 
       await caricaDipendenti();
     } catch (error) {
-      console.error(
-        "Errore modifica grado:",
-        error
-      );
+      console.error("Errore modifica grado:", error);
 
       setErrore(
         error?.message ||
@@ -394,10 +446,7 @@ export default function AdminPage() {
 
       await caricaDipendenti();
     } catch (error) {
-      console.error(
-        "Errore modifica stato:",
-        error
-      );
+      console.error("Errore modifica stato:", error);
 
       setErrore(
         error?.message ||
@@ -409,7 +458,7 @@ export default function AdminPage() {
   }
 
   // =========================================================
-  // ELIMINA DEFINITIVAMENTE
+  // ELIMINA DIPENDENTE
   // =========================================================
 
   async function eliminaDipendente(dipendente) {
@@ -441,21 +490,18 @@ export default function AdminPage() {
         );
       }
 
-      const response = await fetch(
-        "/api/admin/delete-user",
-        {
-          method: "POST",
+      const response = await fetch("/api/admin/delete-user", {
+        method: "POST",
 
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
 
-          body: JSON.stringify({
-            user_id: dipendente.id,
-          }),
-        }
-      );
+        body: JSON.stringify({
+          user_id: dipendente.id,
+        }),
+      });
 
       let risultato = {};
 
@@ -482,10 +528,7 @@ export default function AdminPage() {
         caricaImports(),
       ]);
     } catch (error) {
-      console.error(
-        "Errore eliminazione dipendente:",
-        error
-      );
+      console.error("Errore eliminazione dipendente:", error);
 
       setErrore(
         error?.message ||
@@ -517,19 +560,14 @@ export default function AdminPage() {
         throw error;
       }
 
-      setSuccesso(
-        "Fattura annullata correttamente."
-      );
+      setSuccesso("Fattura annullata correttamente.");
 
       await Promise.all([
         caricaFatture(),
         caricaDipendenti(),
       ]);
     } catch (error) {
-      console.error(
-        "Errore annullamento fattura:",
-        error
-      );
+      console.error("Errore annullamento fattura:", error);
 
       setErrore(
         error?.message ||
@@ -561,19 +599,14 @@ export default function AdminPage() {
         throw error;
       }
 
-      setSuccesso(
-        "Fattura ripristinata correttamente."
-      );
+      setSuccesso("Fattura ripristinata correttamente.");
 
       await Promise.all([
         caricaFatture(),
         caricaDipendenti(),
       ]);
     } catch (error) {
-      console.error(
-        "Errore ripristino fattura:",
-        error
-      );
+      console.error("Errore ripristino fattura:", error);
 
       setErrore(
         error?.message ||
@@ -589,11 +622,9 @@ export default function AdminPage() {
   // =========================================================
 
   function formattaSoldi(numero) {
-    return new Intl.NumberFormat("it-IT", {
-      style: "currency",
-      currency: "USD",
+    return `$${new Intl.NumberFormat("it-IT", {
       maximumFractionDigits: 2,
-    }).format(Number(numero || 0));
+    }).format(Number(numero || 0))}`;
   }
 
   function formattaData(data) {
@@ -734,11 +765,7 @@ export default function AdminPage() {
         >
           {/* HEADER */}
 
-          <div
-            style={{
-              marginBottom: "35px",
-            }}
-          >
+          <div style={{ marginBottom: "35px" }}>
             <div
               style={{
                 color: "#c42a2a",
@@ -765,9 +792,7 @@ export default function AdminPage() {
           {errore && (
             <div
               className="error-message"
-              style={{
-                marginBottom: "20px",
-              }}
+              style={{ marginBottom: "20px" }}
             >
               {errore}
             </div>
@@ -776,9 +801,7 @@ export default function AdminPage() {
           {successo && (
             <div
               className="success-message"
-              style={{
-                marginBottom: "20px",
-              }}
+              style={{ marginBottom: "20px" }}
             >
               {successo}
             </div>
@@ -795,6 +818,11 @@ export default function AdminPage() {
               marginBottom: "35px",
             }}
           >
+            <StatCard
+              titolo="Fondo Cassa"
+              valore={formattaSoldi(fondoCassa)}
+            />
+
             <StatCard
               titolo="Fatturato totale"
               valore={formattaSoldi(fatturatoTotale)}
@@ -826,14 +854,104 @@ export default function AdminPage() {
             />
           </div>
 
+          {/* FONDO CASSA */}
+
+          <div
+            className="card"
+            style={{
+              marginBottom: "35px",
+              border: "1px solid rgba(139,30,30,.45)",
+            }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "11px",
+                fontWeight: "bold",
+                letterSpacing: "3px",
+                marginBottom: "7px",
+              }}
+            >
+              CONTABILITÀ
+            </div>
+
+            <h2>Fondo Cassa</h2>
+
+            <p
+              style={{
+                color: "#777",
+                fontSize: "13px",
+                marginTop: "7px",
+                marginBottom: "22px",
+              }}
+            >
+              Importo attualmente disponibile nella cassa
+              dell&apos;Armeria.
+            </p>
+
+            <div
+              style={{
+                fontSize: "34px",
+                fontWeight: "900",
+                marginBottom: "22px",
+              }}
+            >
+              {formattaSoldi(fondoCassa)}
+            </div>
+
+            <form onSubmit={aggiornaFondoCassa}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  alignItems: "flex-end",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  className="form-group"
+                  style={{
+                    marginBottom: 0,
+                    minWidth: "260px",
+                    flex: "1",
+                  }}
+                >
+                  <label>Nuovo fondo cassa ($)</label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={nuovoFondoCassa}
+                    onChange={(event) =>
+                      setNuovoFondoCassa(
+                        event.target.value
+                      )
+                    }
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={salvataggioFondo}
+                >
+                  {salvataggioFondo
+                    ? "Salvataggio..."
+                    : "Aggiorna Fondo Cassa"}
+                </button>
+              </div>
+            </form>
+          </div>
+
           {/* IMPORT */}
 
           <div
             className="card"
             style={{
               marginBottom: "20px",
-              border:
-                "1px solid rgba(139,30,30,.35)",
+              border: "1px solid rgba(139,30,30,.35)",
             }}
           >
             <div
@@ -889,8 +1007,7 @@ export default function AdminPage() {
             className="card"
             style={{
               marginBottom: "35px",
-              border:
-                "1px solid rgba(139,30,30,.35)",
+              border: "1px solid rgba(139,30,30,.35)",
             }}
           >
             <div
@@ -940,13 +1057,11 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* ASSUMI */}
+          {/* ASSUMI DIPENDENTE */}
 
           <div
             className="card"
-            style={{
-              marginBottom: "35px",
-            }}
+            style={{ marginBottom: "35px" }}
           >
             <div
               style={{
@@ -960,11 +1075,7 @@ export default function AdminPage() {
               PERSONALE
             </div>
 
-            <h2
-              style={{
-                marginBottom: "22px",
-              }}
-            >
+            <h2 style={{ marginBottom: "22px" }}>
               Assumi dipendente
             </h2>
 
@@ -1063,11 +1174,7 @@ export default function AdminPage() {
 
           {/* PERSONALE */}
 
-          <div
-            style={{
-              marginBottom: "40px",
-            }}
-          >
+          <div style={{ marginBottom: "40px" }}>
             <h2
               style={{
                 marginBottom: "15px",
@@ -1099,8 +1206,7 @@ export default function AdminPage() {
                   <div
                     style={{
                       display: "flex",
-                      justifyContent:
-                        "space-between",
+                      justifyContent: "space-between",
                       gap: "15px",
                       marginBottom: "15px",
                     }}
@@ -1152,47 +1258,28 @@ export default function AdminPage() {
                   >
                     <div>
                       Grado:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
+                      <strong style={{ color: "#fff" }}>
                         {dipendente.grado}
                       </strong>
                     </div>
 
                     <div>
                       Percentuale:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
-                        {
-                          dipendente.percentuale_stipendio
-                        }
-                        %
+                      <strong style={{ color: "#fff" }}>
+                        {dipendente.percentuale_stipendio}%
                       </strong>
                     </div>
 
                     <div>
                       Fatture:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
+                      <strong style={{ color: "#fff" }}>
                         {dipendente.numero_fatture}
                       </strong>
                     </div>
 
                     <div>
                       Fatturato:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
+                      <strong style={{ color: "#fff" }}>
                         {formattaSoldi(
                           dipendente.fatturato
                         )}
@@ -1201,11 +1288,7 @@ export default function AdminPage() {
 
                     <div>
                       Stipendio:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                        }}
-                      >
+                      <strong style={{ color: "#fff" }}>
                         {formattaSoldi(
                           dipendente.stipendio
                         )}
@@ -1239,8 +1322,7 @@ export default function AdminPage() {
                                 key={grado}
                                 value={grado}
                               >
-                                {grado} —{" "}
-                                {percentuale}%
+                                {grado} — {percentuale}%
                               </option>
                             )
                           )}
@@ -1330,11 +1412,7 @@ export default function AdminPage() {
 
             {fatture.length === 0 ? (
               <div className="card">
-                <p
-                  style={{
-                    color: "#777",
-                  }}
-                >
+                <p style={{ color: "#777" }}>
                   Nessuna fattura registrata.
                 </p>
               </div>
