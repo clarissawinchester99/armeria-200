@@ -355,8 +355,8 @@ export default function Sidebar() {
             style={{
               color: "#d99a2b",
 
-              fontFamily:
-                "Impact, 'Arial Black', sans-serif",
+           fontFamily:
+  "'Trebuchet MS', Arial, Helvetica, sans-serif",
 
               fontSize: "27px",
               fontWeight: "900",
@@ -376,8 +376,8 @@ export default function Sidebar() {
             style={{
               color: "#d71813",
 
-              fontFamily:
-                "Impact, 'Arial Black', sans-serif",
+         fontFamily:
+  "'Trebuchet MS', Arial, Helvetica, sans-serif",
 
               fontSize: "27px",
               fontWeight: "900",
