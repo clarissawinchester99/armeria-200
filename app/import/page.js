@@ -5,66 +5,29 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import Sidebar from "../../components/Sidebar";
 
-const MATERIALI = [
-  {
-    nome: "MANICO",
-    prezzo: 350,
-  },
-  {
-    nome: "LAMA",
-    prezzo: 1050,
-  },
-  {
-    nome: "ACCIAIO",
-    prezzo: 105,
-  },
-  {
-    nome: "IMPUGNATURA",
-    prezzo: 700,
-  },
-  {
-    nome: "CARICATORE",
-    prezzo: 630,
-  },
-  {
-    nome: "PEZZO ARMA",
-    prezzo: 840,
-  },
-  {
-    nome: "POLVERE DA SPARO",
-    prezzo: 560,
-  },
-];
-
 export default function ImportPage() {
   const router = useRouter();
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
+  const [salvataggio, setSalvataggio] = useState(false);
 
-  const [salvataggio, setSalvataggio] =
-    useState(false);
+  const [utente, setUtente] = useState(null);
+  const [profilo, setProfilo] = useState(null);
 
-  const [utente, setUtente] =
-    useState(null);
+  const [materiali, setMateriali] = useState([]);
+  const [quantita, setQuantita] = useState({});
 
-  const [profilo, setProfilo] =
-    useState(null);
-
-  const [quantita, setQuantita] =
-    useState({});
-
-  const [errore, setErrore] =
-    useState("");
-
-  const [successo, setSuccesso] =
-    useState("");
+  const [errore, setErrore] = useState("");
+  const [successo, setSuccesso] = useState("");
 
   useEffect(() => {
     inizializza();
   }, []);
 
   async function inizializza() {
+    setLoading(true);
+    setErrore("");
+
     try {
       const {
         data: { user },
@@ -108,12 +71,40 @@ export default function ImportPage() {
         await supabase.auth.signOut();
 
         router.replace("/login");
-
         return;
+      }
+
+      // ==============================
+      // CARICA MATERIALI IMPORT
+      // ==============================
+
+      const {
+        data: materialiData,
+        error: materialiError,
+      } = await supabase
+        .from("import_materials")
+        .select(`
+          id,
+          nome,
+          prezzo,
+          ordine,
+          attivo
+        `)
+        .eq("attivo", true)
+        .order("ordine", {
+          ascending: true,
+        })
+        .order("nome", {
+          ascending: true,
+        });
+
+      if (materialiError) {
+        throw materialiError;
       }
 
       setUtente(user);
       setProfilo(profiloData);
+      setMateriali(materialiData || []);
     } catch (error) {
       console.error(error);
 
@@ -131,7 +122,7 @@ export default function ImportPage() {
   // ==============================
 
   function cambiaQuantita(
-    nome,
+    id,
     valore
   ) {
     let numero = parseInt(
@@ -149,7 +140,7 @@ export default function ImportPage() {
     setQuantita(
       (precedenti) => ({
         ...precedenti,
-        [nome]: numero,
+        [id]: numero,
       })
     );
   }
@@ -159,12 +150,12 @@ export default function ImportPage() {
   // ==============================
 
   function materialiSelezionati() {
-    return MATERIALI
+    return materiali
       .filter((materiale) => {
         return (
           Number(
             quantita[
-              materiale.nome
+              materiale.id
             ] || 0
           ) > 0
         );
@@ -172,18 +163,23 @@ export default function ImportPage() {
       .map((materiale) => {
         const qta = Number(
           quantita[
-            materiale.nome
+            materiale.id
           ] || 0
+        );
+
+        const prezzo = Number(
+          materiale.prezzo || 0
         );
 
         return {
           ...materiale,
 
+          prezzo,
+
           quantita: qta,
 
           subtotale:
-            materiale.prezzo *
-            qta,
+            prezzo * qta,
         };
       });
   }
@@ -208,11 +204,11 @@ export default function ImportPage() {
   // FORMATTA SOLDI
   // ==============================
 
-function formattaSoldi(numero) {
-  return `$${new Intl.NumberFormat("it-IT", {
-    maximumFractionDigits: 2,
-  }).format(Number(numero || 0))}`;
-}
+  function formattaSoldi(numero) {
+    return `$${new Intl.NumberFormat("it-IT", {
+      maximumFractionDigits: 2,
+    }).format(Number(numero || 0))}`;
+  }
 
   // ==============================
   // REGISTRA IMPORT
@@ -459,176 +455,207 @@ function formattaSoldi(numero) {
             </p>
           </div>
 
+          {/* ERRORE CARICAMENTO */}
+
+          {errore && (
+            <div
+              className="error-message"
+              style={{
+                marginBottom: "20px",
+              }}
+            >
+              {errore}
+            </div>
+          )}
+
           {/* MATERIALI */}
 
-          <div
-            style={{
-              display: "grid",
+          {materiali.length === 0 ? (
+            <div
+              className="card"
+              style={{
+                color: "#777",
+              }}
+            >
+              Nessun materiale Import
+              attivo disponibile.
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
 
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(250px, 1fr))",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(250px, 1fr))",
 
-              gap: "15px",
-            }}
-          >
-            {MATERIALI.map(
-              (materiale) => {
-                const qta =
-                  Number(
-                    quantita[
-                      materiale.nome
-                    ] || 0
-                  );
+                gap: "15px",
+              }}
+            >
+              {materiali.map(
+                (materiale) => {
+                  const qta =
+                    Number(
+                      quantita[
+                        materiale.id
+                      ] || 0
+                    );
 
-                const subtotale =
-                  materiale.prezzo *
-                  qta;
+                  const prezzo =
+                    Number(
+                      materiale.prezzo ||
+                        0
+                    );
 
-                return (
-                  <div
-                    className="card"
-                    key={
-                      materiale.nome
-                    }
-                    style={{
-                      padding:
-                        "20px",
-                    }}
-                  >
+                  const subtotale =
+                    prezzo *
+                    qta;
+
+                  return (
                     <div
+                      className="card"
+                      key={
+                        materiale.id
+                      }
                       style={{
-                        display:
-                          "flex",
-
-                        justifyContent:
-                          "space-between",
-
-                        alignItems:
-                          "flex-start",
-
-                        gap: "15px",
-
-                        marginBottom:
+                        padding:
                           "20px",
                       }}
                     >
-                      <div>
-                        <h3
-                          style={{
-                            fontSize:
-                              "17px",
-                          }}
-                        >
-                          {
-                            materiale.nome
-                          }
-                        </h3>
-
-                        <div
-                          style={{
-                            color:
-                              "#777",
-
-                            fontSize:
-                              "12px",
-
-                            marginTop:
-                              "5px",
-                          }}
-                        >
-                          Prezzo
-                          unitario
-                        </div>
-                      </div>
-
                       <div
                         style={{
-                          color:
-                            "#c42a2a",
-
-                          fontSize:
-                            "18px",
-
-                          fontWeight:
-                            "900",
-                        }}
-                      >
-                        {formattaSoldi(
-                          materiale.prezzo
-                        )}
-                      </div>
-                    </div>
-
-                    <label>
-                      Quantità
-                    </label>
-
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={qta}
-                      onChange={(
-                        e
-                      ) =>
-                        cambiaQuantita(
-                          materiale.nome,
-                          e.target
-                            .value
-                        )
-                      }
-                      style={{
-                        marginTop:
-                          "8px",
-                      }}
-                    />
-
-                    {qta > 0 && (
-                      <div
-                        style={{
-                          marginTop:
-                            "15px",
-
-                          paddingTop:
-                            "15px",
-
-                          borderTop:
-                            "1px solid #222",
-
                           display:
                             "flex",
 
                           justifyContent:
                             "space-between",
 
-                          color:
-                            "#aaa",
+                          alignItems:
+                            "flex-start",
 
-                          fontSize:
-                            "13px",
+                          gap: "15px",
+
+                          marginBottom:
+                            "20px",
                         }}
                       >
-                        <span>
-                          Subtotale
-                        </span>
+                        <div>
+                          <h3
+                            style={{
+                              fontSize:
+                                "17px",
+                            }}
+                          >
+                            {
+                              materiale.nome
+                            }
+                          </h3>
 
-                        <strong
+                          <div
+                            style={{
+                              color:
+                                "#777",
+
+                              fontSize:
+                                "12px",
+
+                              marginTop:
+                                "5px",
+                            }}
+                          >
+                            Prezzo
+                            unitario
+                          </div>
+                        </div>
+
+                        <div
                           style={{
                             color:
-                              "#fff",
+                              "#c42a2a",
+
+                            fontSize:
+                              "18px",
+
+                            fontWeight:
+                              "900",
                           }}
                         >
                           {formattaSoldi(
-                            subtotale
+                            prezzo
                           )}
-                        </strong>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                );
-              }
-            )}
-          </div>
+
+                      <label>
+                        Quantità
+                      </label>
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={qta}
+                        onChange={(
+                          e
+                        ) =>
+                          cambiaQuantita(
+                            materiale.id,
+                            e.target
+                              .value
+                          )
+                        }
+                        style={{
+                          marginTop:
+                            "8px",
+                        }}
+                      />
+
+                      {qta > 0 && (
+                        <div
+                          style={{
+                            marginTop:
+                              "15px",
+
+                            paddingTop:
+                              "15px",
+
+                            borderTop:
+                              "1px solid #222",
+
+                            display:
+                              "flex",
+
+                            justifyContent:
+                              "space-between",
+
+                            color:
+                              "#aaa",
+
+                            fontSize:
+                              "13px",
+                          }}
+                        >
+                          <span>
+                            Subtotale
+                          </span>
+
+                          <strong
+                            style={{
+                              color:
+                                "#fff",
+                            }}
+                          >
+                            {formattaSoldi(
+                              subtotale
+                            )}
+                          </strong>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              )}
+            </div>
+          )}
 
           {/* TOTALE */}
 
@@ -711,7 +738,9 @@ function formattaSoldi(numero) {
                 }
                 disabled={
                   salvataggio ||
-                  totale <= 0
+                  totale <= 0 ||
+                  materiali.length ===
+                    0
                 }
                 style={{
                   minWidth:
@@ -723,12 +752,6 @@ function formattaSoldi(numero) {
                   : "REGISTRA IMPORT"}
               </button>
             </div>
-
-            {errore && (
-              <div className="error-message">
-                {errore}
-              </div>
-            )}
 
             {successo && (
               <div className="success-message">
