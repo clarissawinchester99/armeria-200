@@ -158,48 +158,37 @@ export default function Sidebar() {
           router.push(voce.percorso)
         }
         style={{
-          position: "relative",
-
           width: "100%",
 
           display: "flex",
           alignItems: "center",
 
-          gap: "12px",
+          gap: "11px",
 
           padding: "11px 12px",
 
-          border: attiva
-            ? "1px solid rgba(217,154,43,.30)"
-            : "1px solid transparent",
-
-          borderRadius: "6px",
+          border: "none",
+          borderRadius: "8px",
 
           background: attiva
-            ? "linear-gradient(90deg, rgba(175,12,12,.30) 0%, rgba(85,5,5,.16) 65%, rgba(217,154,43,.04) 100%)"
+            ? "rgba(125, 22, 22, 0.28)"
             : "transparent",
 
-          boxShadow: attiva
-            ? "inset 3px 0 0 #d99a2b, 0 0 18px rgba(180,14,14,.08)"
-            : "none",
-
           color: attiva
-            ? "#f2c65e"
-            : "#989898",
+            ? "#ffffff"
+            : "#9a9a9a",
 
           cursor: "pointer",
 
           textAlign: "left",
 
-          fontSize: "12px",
+          fontSize: "13px",
 
           fontWeight: attiva
-            ? "900"
-            : "700",
+            ? "800"
+            : "600",
 
-          letterSpacing: ".25px",
-
-          transition: "all .2s ease",
+          transition: "0.2s",
         }}
       >
         <span
@@ -213,54 +202,28 @@ export default function Sidebar() {
 
             flexShrink: 0,
 
-            borderRadius: "4px",
+            borderRadius: "6px",
 
             background: attiva
-              ? "linear-gradient(145deg, #c81913, #720707)"
-              : "linear-gradient(145deg, #171717, #0c0c0c)",
+              ? "#7d1616"
+              : "#171717",
 
             border: attiva
-              ? "1px solid rgba(255,72,55,.40)"
-              : "1px solid #242424",
+              ? "1px solid #8b1e1e"
+              : "1px solid #252525",
 
             color: attiva
-              ? "#ffd36a"
-              : "#686868",
-
-            boxShadow: attiva
-              ? "0 0 12px rgba(190,15,10,.22), inset 0 1px 0 rgba(255,255,255,.10)"
-              : "inset 0 1px 0 rgba(255,255,255,.02)",
+              ? "#ffffff"
+              : "#777777",
 
             fontSize: "13px",
-            fontWeight: "900",
+            fontWeight: "800",
           }}
         >
           {voce.icona}
         </span>
 
-        <span>
-          {voce.nome}
-        </span>
-
-        {attiva && (
-          <span
-            style={{
-              position: "absolute",
-
-              right: "10px",
-
-              width: "4px",
-              height: "4px",
-
-              borderRadius: "50%",
-
-              background: "#ed1c16",
-
-              boxShadow:
-                "0 0 7px #ed1c16",
-            }}
-          />
-        )}
+        <span>{voce.nome}</span>
       </button>
     );
   }
@@ -280,62 +243,35 @@ export default function Sidebar() {
         flexDirection: "column",
 
         background:
-          "radial-gradient(circle at 50% 0%, rgba(170,15,10,.16), transparent 26%), linear-gradient(180deg, #0b0b0b 0%, #060606 45%, #030303 100%)",
+          "linear-gradient(180deg, #111111 0%, #090909 100%)",
 
         borderRight:
-          "1px solid rgba(217,154,43,.18)",
+          "1px solid rgba(255,255,255,0.07)",
 
         boxShadow:
-          "10px 0 40px rgba(0,0,0,.65), 2px 0 12px rgba(180,14,14,.05)",
+          "8px 0 30px rgba(0,0,0,0.35)",
 
         zIndex: 1000,
       }}
     >
-      {/* ======================== */}
       {/* LOGO */}
-      {/* ======================== */}
 
       <div
         style={{
-          position: "relative",
-
-          padding: "25px 20px 22px",
-
-          overflow: "hidden",
+          padding: "24px 20px",
 
           borderBottom:
-            "1px solid rgba(217,154,43,.15)",
-
-          background:
-            "linear-gradient(180deg, rgba(150,10,8,.10), rgba(0,0,0,0))",
+            "1px solid rgba(255,255,255,0.07)",
         }}
       >
         <div
           style={{
-            position: "absolute",
-
-            top: 0,
-            left: 0,
-            right: 0,
-
-            height: "2px",
-
-            background:
-              "linear-gradient(90deg, transparent, #a90d0d, #ed1c16, #d99a2b, transparent)",
-
-            boxShadow:
-              "0 0 12px rgba(237,28,22,.35)",
-          }}
-        />
-
-        <div
-          style={{
-            color: "#a90d0d",
+            color: "#777777",
 
             fontSize: "9px",
-            fontWeight: "900",
+            fontWeight: "800",
 
-            letterSpacing: "4px",
+            letterSpacing: "3px",
 
             marginBottom: "6px",
           }}
@@ -345,101 +281,26 @@ export default function Sidebar() {
 
         <div
           style={{
-            display: "flex",
-            alignItems: "baseline",
+            color: "#ffffff",
 
-            gap: "7px",
+            fontSize: "23px",
+            fontWeight: "900",
+
+            letterSpacing: "1px",
           }}
         >
+          ARMERIA{" "}
           <span
             style={{
-              color: "#d99a2b",
-
-           fontFamily:
-  "'Trebuchet MS', Arial, Helvetica, sans-serif",
-
-              fontSize: "27px",
-              fontWeight: "900",
-
-              letterSpacing: "2px",
-
-              lineHeight: 1,
-
-              textShadow:
-                "0 2px 0 #5c350d, 0 0 14px rgba(217,154,43,.10)",
-            }}
-          >
-            ARMERIA
-          </span>
-
-          <span
-            style={{
-              color: "#d71813",
-
-         fontFamily:
-  "'Trebuchet MS', Arial, Helvetica, sans-serif",
-
-              fontSize: "27px",
-              fontWeight: "900",
-
-              letterSpacing: "1px",
-
-              lineHeight: 1,
-
-              textShadow:
-                "0 2px 0 #5e0505, 0 0 14px rgba(220,20,15,.15)",
+              color: "#8b1e1e",
             }}
           >
             200
           </span>
         </div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-
-            gap: "6px",
-
-            marginTop: "13px",
-          }}
-        >
-          <div
-            style={{
-              width: "38px",
-              height: "2px",
-
-              background:
-                "linear-gradient(90deg, #a90d0d, #ed1c16)",
-            }}
-          />
-
-          <div
-            style={{
-              width: "5px",
-              height: "5px",
-
-              transform: "rotate(45deg)",
-
-              background: "#d99a2b",
-            }}
-          />
-
-          <div
-            style={{
-              flex: 1,
-              height: "1px",
-
-              background:
-                "linear-gradient(90deg, rgba(217,154,43,.35), transparent)",
-            }}
-          />
-        </div>
       </div>
 
-      {/* ======================== */}
       {/* MENU */}
-      {/* ======================== */}
 
       <div
         style={{
@@ -452,38 +313,19 @@ export default function Sidebar() {
       >
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
+            color: "#555555",
 
-            gap: "8px",
+            fontSize: "9px",
+            fontWeight: "800",
+
+            letterSpacing: "2px",
 
             padding: "0 10px",
 
             marginBottom: "9px",
           }}
         >
-          <div
-            style={{
-              color: "#665432",
-
-              fontSize: "8px",
-              fontWeight: "900",
-
-              letterSpacing: "3px",
-            }}
-          >
-            MENU
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              height: "1px",
-
-              background:
-                "linear-gradient(90deg, rgba(217,154,43,.15), transparent)",
-            }}
-          />
+          MENU
         </div>
 
         <div
@@ -511,44 +353,25 @@ export default function Sidebar() {
                 margin: "20px 8px",
 
                 background:
-                  "linear-gradient(90deg, transparent, rgba(180,14,14,.35), rgba(217,154,43,.20), transparent)",
+                  "rgba(255,255,255,0.06)",
               }}
             />
 
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
+                color: "#7d1616",
 
-                gap: "8px",
+                fontSize: "9px",
+                fontWeight: "800",
+
+                letterSpacing: "2px",
 
                 padding: "0 10px",
 
                 marginBottom: "9px",
               }}
             >
-              <div
-                style={{
-                  color: "#a90d0d",
-
-                  fontSize: "8px",
-                  fontWeight: "900",
-
-                  letterSpacing: "2.5px",
-                }}
-              >
-                AMMINISTRAZIONE
-              </div>
-
-              <div
-                style={{
-                  flex: 1,
-                  height: "1px",
-
-                  background:
-                    "linear-gradient(90deg, rgba(180,14,14,.30), transparent)",
-                }}
-              />
+              AMMINISTRAZIONE
             </div>
 
             <div
@@ -570,21 +393,16 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* ======================== */}
       {/* PROFILO */}
-      {/* ======================== */}
 
       <div
         style={{
-          position: "relative",
-
           padding: "16px",
 
           borderTop:
-            "1px solid rgba(217,154,43,.13)",
+            "1px solid rgba(255,255,255,0.07)",
 
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,.1), rgba(120,8,8,.05))",
+          background: "#0a0a0a",
         }}
       >
         {!caricamento && (
@@ -597,12 +415,10 @@ export default function Sidebar() {
           >
             <div
               style={{
-                color: "#d99a2b",
+                color: "#ffffff",
 
-                fontSize: "11px",
-                fontWeight: "900",
-
-                letterSpacing: ".4px",
+                fontSize: "12px",
+                fontWeight: "800",
 
                 whiteSpace: "nowrap",
                 overflow: "hidden",
@@ -615,9 +431,9 @@ export default function Sidebar() {
             {username && (
               <div
                 style={{
-                  color: "#666",
+                  color: "#666666",
 
-                  fontSize: "9px",
+                  fontSize: "10px",
 
                   marginTop: "4px",
                 }}
@@ -633,42 +449,26 @@ export default function Sidebar() {
 
                   alignItems: "center",
 
-                  gap: "5px",
-
                   marginTop: "7px",
 
                   padding: "3px 7px",
 
                   background:
-                    "linear-gradient(90deg, rgba(160,10,10,.18), rgba(217,154,43,.05))",
+                    "rgba(125,22,22,0.14)",
 
                   border:
-                    "1px solid rgba(217,154,43,.22)",
+                    "1px solid rgba(139,30,30,0.25)",
 
-                  borderRadius: "3px",
+                  borderRadius: "5px",
 
-                  color: "#d99a2b",
+                  color: "#b95c5c",
 
-                  fontSize: "7px",
-                  fontWeight: "900",
+                  fontSize: "8px",
+                  fontWeight: "800",
 
-                  letterSpacing: "1.5px",
+                  letterSpacing: "1px",
                 }}
               >
-                <span
-                  style={{
-                    width: "4px",
-                    height: "4px",
-
-                    borderRadius: "50%",
-
-                    background: "#ed1c16",
-
-                    boxShadow:
-                      "0 0 5px #ed1c16",
-                  }}
-                />
-
                 ADMIN
               </div>
             )}
@@ -684,26 +484,18 @@ export default function Sidebar() {
             padding: "10px 12px",
 
             border:
-              "1px solid rgba(190,18,13,.35)",
+              "1px solid #292929",
 
-            borderRadius: "5px",
+            borderRadius: "7px",
 
-            background:
-              "linear-gradient(180deg, rgba(130,10,10,.15), rgba(65,5,5,.10))",
+            background: "#151515",
 
-            color: "#b9822b",
+            color: "#b5b5b5",
 
-            fontSize: "10px",
-            fontWeight: "900",
-
-            letterSpacing: ".7px",
-
-            textTransform: "uppercase",
+            fontSize: "11px",
+            fontWeight: "700",
 
             cursor: "pointer",
-
-            boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,.025)",
           }}
         >
           Esci dal Gestionale
