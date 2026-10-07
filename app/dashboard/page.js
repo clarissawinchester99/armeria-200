@@ -61,10 +61,6 @@ export default function DashboardPage() {
         );
       }
 
-      // ==============================
-      // ACCOUNT DISATTIVATO
-      // ==============================
-
       if (!profiloData.attivo) {
         await supabase.auth.signOut();
         router.replace("/login");
@@ -147,22 +143,20 @@ export default function DashboardPage() {
           >
             <h2
               style={{
-                color: "#b18a4a",
-                fontSize: "22px",
-                letterSpacing: "1px",
+                color: "#ffffff",
+                fontSize: "24px",
               }}
             >
-              ARMERIA 200
+              Dashboard
             </h2>
 
             <p
               style={{
-                color: "#686868",
+                color: "#888",
                 marginTop: "10px",
-                fontSize: "13px",
               }}
             >
-              Caricamento dashboard...
+              Caricamento...
             </p>
           </div>
         </main>
@@ -181,10 +175,6 @@ export default function DashboardPage() {
     `${profilo.nome || ""} ${
       profilo.cognome || ""
     }`.trim();
-
-  // ==============================
-  // PAGINA
-  // ==============================
 
   return (
     <>
@@ -209,37 +199,14 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginBottom: "28px",
-              paddingBottom: "20px",
-
-              borderBottom:
-                "1px solid rgba(177,138,74,.14)",
+              marginBottom: "30px",
             }}
           >
-            <div
-              style={{
-                color: "#713737",
-
-                fontSize: "10px",
-                fontWeight: "800",
-
-                letterSpacing: "3px",
-
-                marginBottom: "7px",
-              }}
-            >
-              ARMERIA 200
-            </div>
-
             <h1
               style={{
-                color: "#dedede",
-
+                color: "#ffffff",
                 fontSize: "30px",
-                fontWeight: "900",
-
-                letterSpacing: "1px",
-
+                fontWeight: "800",
                 margin: 0,
               }}
             >
@@ -248,14 +215,13 @@ export default function DashboardPage() {
 
             <p
               style={{
-                color: "#666",
-
+                color: "#888888",
                 marginTop: "7px",
-
-                fontSize: "12px",
+                fontSize: "14px",
               }}
             >
-              Gestionale dipendenti
+              Benvenuto nel gestionale
+              Armeria 200
             </p>
           </div>
 
@@ -266,59 +232,37 @@ export default function DashboardPage() {
           <div
             className="card"
             style={{
-              marginBottom: "30px",
-
-              padding: "25px 27px",
-
-              background:
-                "linear-gradient(135deg, #111111, #0b0b0b)",
-
-              border:
-                "1px solid rgba(177,138,74,.13)",
-
-              boxShadow:
-                "0 12px 35px rgba(0,0,0,.28)",
+              marginBottom: "25px",
             }}
           >
             <div
               style={{
                 display: "flex",
-
                 justifyContent:
                   "space-between",
-
                 alignItems: "center",
-
                 gap: "25px",
-
                 flexWrap: "wrap",
               }}
             >
-              {/* UTENTE */}
-
               <div>
                 <div
                   style={{
-                    color: "#777",
-
-                    fontSize: "9px",
-                    fontWeight: "800",
-
+                    color: "#888888",
+                    fontSize: "12px",
+                    fontWeight: "700",
                     textTransform:
                       "uppercase",
-
-                    letterSpacing: "2px",
-
+                    letterSpacing: "1px",
                     marginBottom: "7px",
                   }}
                 >
-                  Benvenuto
+                  Utente
                 </div>
 
                 <div
                   style={{
-                    color: "#e4e4e4",
-
+                    color: "#ffffff",
                     fontSize: "24px",
                     fontWeight: "800",
                   }}
@@ -329,18 +273,14 @@ export default function DashboardPage() {
 
                 <div
                   style={{
-                    color: "#626262",
-
-                    fontSize: "11px",
-
+                    color: "#777777",
+                    fontSize: "12px",
                     marginTop: "5px",
                   }}
                 >
                   @{profilo.username}
                 </div>
               </div>
-
-              {/* RUOLO */}
 
               <div
                 style={{
@@ -352,24 +292,16 @@ export default function DashboardPage() {
                     style={{
                       display:
                         "inline-block",
-
                       marginBottom: "8px",
-
                       padding: "4px 8px",
-
                       background:
-                        "rgba(92,35,35,.15)",
-
+                        "rgba(125,22,22,0.15)",
                       border:
-                        "1px solid rgba(113,55,55,.30)",
-
-                      borderRadius: "4px",
-
-                      color: "#a96666",
-
-                      fontSize: "8px",
+                        "1px solid rgba(139,30,30,0.3)",
+                      borderRadius: "5px",
+                      color: "#c85b5b",
+                      fontSize: "9px",
                       fontWeight: "800",
-
                       letterSpacing: "1px",
                     }}
                   >
@@ -379,8 +311,7 @@ export default function DashboardPage() {
 
                 <div
                   style={{
-                    color: "#b18a4a",
-
+                    color: "#ffffff",
                     fontSize: "17px",
                     fontWeight: "800",
                   }}
@@ -391,17 +322,15 @@ export default function DashboardPage() {
 
                 <div
                   style={{
-                    color: "#777",
-
-                    fontSize: "11px",
-
+                    color: "#888888",
+                    fontSize: "12px",
                     marginTop: "5px",
                   }}
                 >
                   Percentuale stipendio{" "}
                   <span
                     style={{
-                      color: "#a96666",
+                      color: "#b94a4a",
                       fontWeight: "800",
                     }}
                   >
@@ -416,57 +345,27 @@ export default function DashboardPage() {
           </div>
 
           {/* ======================== */}
-          {/* RIEPILOGO */}
+          {/* STATISTICHE */}
           {/* ======================== */}
 
-          <div
+          <h2
             style={{
+              color: "#ffffff",
+              fontSize: "19px",
+              fontWeight: "800",
               marginBottom: "15px",
             }}
           >
-            <div
-              style={{
-                color: "#6e5530",
-
-                fontSize: "9px",
-                fontWeight: "800",
-
-                letterSpacing: "2.5px",
-
-                marginBottom: "6px",
-              }}
-            >
-              RIEPILOGO
-            </div>
-
-            <h2
-              style={{
-                color: "#cfcfcf",
-
-                fontSize: "17px",
-                fontWeight: "800",
-
-                letterSpacing: ".5px",
-              }}
-            >
-              Le tue statistiche
-            </h2>
-          </div>
-
-          {/* ======================== */}
-          {/* STATISTICHE */}
-          {/* ======================== */}
+            Le tue statistiche
+          </h2>
 
           <div
             style={{
               display: "grid",
-
               gridTemplateColumns:
                 "repeat(auto-fit, minmax(220px, 1fr))",
-
               gap: "15px",
-
-              marginBottom: "35px",
+              marginBottom: "30px",
             }}
           >
             <StatCard
@@ -498,66 +397,33 @@ export default function DashboardPage() {
           {/* INFO */}
           {/* ======================== */}
 
-          <div
-            className="card"
-            style={{
-              padding: "24px 27px",
-
-              background: "#0d0d0d",
-
-              border:
-                "1px solid rgba(255,255,255,.055)",
-
-              boxShadow:
-                "0 10px 30px rgba(0,0,0,.22)",
-            }}
-          >
+          <div className="card">
             <div
               style={{
-                color: "#713737",
-
-                fontSize: "9px",
+                color: "#ffffff",
+                fontSize: "17px",
                 fontWeight: "800",
-
-                letterSpacing: "2.5px",
-
                 marginBottom: "9px",
               }}
             >
-              ARMERIA 200
-            </div>
-
-            <div
-              style={{
-                color: "#d0d0d0",
-
-                fontSize: "16px",
-                fontWeight: "800",
-
-                marginBottom: "8px",
-              }}
-            >
-              Gestionale Dipendenti
+              Armeria 200
             </div>
 
             <p
               style={{
-                color: "#686868",
-
-                fontSize: "12px",
-
+                color: "#888888",
+                fontSize: "13px",
                 lineHeight: "1.7",
-
                 margin: 0,
-
                 maxWidth: "760px",
               }}
             >
-              Utilizza il menu a sinistra
-              per registrare fatture,
-              effettuare ordini di import,
-              consultare gli storici e
-              controllare il tuo stipendio.
+              Utilizza il menu a
+              sinistra per registrare
+              fatture, effettuare ordini
+              di import, consultare gli
+              storici e controllare il
+              tuo stipendio.
               {admin &&
                 " Le funzioni di amministrazione sono disponibili nella sezione dedicata."}
             </p>
@@ -582,31 +448,17 @@ function StatCard({
       className="card"
       style={{
         minHeight: "135px",
-
         padding: "22px",
-
-        background:
-          "linear-gradient(145deg, #101010, #0b0b0b)",
-
-        border:
-          "1px solid rgba(255,255,255,.055)",
-
-        boxShadow:
-          "0 10px 28px rgba(0,0,0,.22)",
       }}
     >
       <div
         style={{
-          color: "#727272",
-
-          fontSize: "9px",
+          color: "#888888",
+          fontSize: "11px",
           fontWeight: "700",
-
           textTransform: "uppercase",
-
-          letterSpacing: "1.3px",
-
-          marginBottom: "11px",
+          letterSpacing: "1px",
+          marginBottom: "10px",
         }}
       >
         {titolo}
@@ -614,12 +466,10 @@ function StatCard({
 
       <div
         style={{
-          color: "#b18a4a",
-
-          fontSize: "26px",
+          color: "#ffffff",
+          fontSize: "27px",
           fontWeight: "800",
-
-          marginBottom: "10px",
+          marginBottom: "9px",
         }}
       >
         {valore}
@@ -627,9 +477,8 @@ function StatCard({
 
       <div
         style={{
-          color: "#565656",
-
-          fontSize: "10px",
+          color: "#666666",
+          fontSize: "11px",
         }}
       >
         {descrizione}
