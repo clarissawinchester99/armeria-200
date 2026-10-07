@@ -16,7 +16,6 @@ export default function FatturePage() {
 
   const [categorie, setCategorie] = useState([]);
   const [prodotti, setProdotti] = useState([]);
-
   const [quantita, setQuantita] = useState({});
 
   const [errore, setErrore] = useState("");
@@ -38,10 +37,6 @@ export default function FatturePage() {
       }
 
       setUtente(user);
-
-      // ==============================
-      // CARICA PROFILO DIPENDENTE
-      // ==============================
 
       const {
         data: profiloData,
@@ -73,10 +68,6 @@ export default function FatturePage() {
 
       setProfilo(profiloData);
 
-      // ==============================
-      // CARICA CATEGORIE
-      // ==============================
-
       const {
         data: categorieData,
         error: categorieError,
@@ -91,10 +82,6 @@ export default function FatturePage() {
       if (categorieError) {
         throw categorieError;
       }
-
-      // ==============================
-      // CARICA PRODOTTI
-      // ==============================
 
       const {
         data: prodottiData,
@@ -118,3 +105,130 @@ export default function FatturePage() {
       setProdotti(prodottiData || []);
     } catch (error) {
       console.error(error);
+
+      setErrore(
+        error.message ||
+          "Errore durante il caricamento dei prodotti."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ==============================
+  // QUANTITÀ
+  // ==============================
+
+  function cambiaQuantita(productId, valore) {
+    let numero = parseInt(valore, 10);
+
+    if (isNaN(numero) || numero < 0) {
+      numero = 0;
+    }
+
+    setQuantita((precedenti) => ({
+      ...precedenti,
+      [productId]: numero,
+    }));
+
+    if (successo) {
+      setSuccesso("");
+    }
+  }
+
+  // ==============================
+  // PRODOTTI SELEZIONATI
+  // ==============================
+
+  function prodottiSelezionati() {
+    return prodotti
+      .filter(
+        (prodotto) =>
+          Number(quantita[prodotto.id] || 0) > 0
+      )
+      .map((prodotto) => {
+        const qta = Number(
+          quantita[prodotto.id] || 0
+        );
+
+        return {
+          ...prodotto,
+          quantita: qta,
+          subtotale:
+            Number(prodotto.prezzo) * qta,
+        };
+      });
+  }
+
+  function calcolaTotale() {
+    return prodottiSelezionati().reduce(
+      (totale, prodotto) =>
+        totale + prodotto.subtotale,
+      0
+    );
+  }
+
+  function formattaSoldi(numero) {
+    return `$${new Intl.NumberFormat("it-IT", {
+      maximumFractionDigits: 2,
+    }).format(Number(numero || 0))}`;
+  }
+
+  // ==============================
+  // CREA FATTURA
+  // ==============================
+
+  async function creaFattura() {
+    if (salvataggio) return;
+
+    setErrore("");
+    setSuccesso("");
+
+    const selezionati = prodottiSelezionati();
+
+    if (selezionati.length === 0) {
+      setErrore("Seleziona almeno un prodotto.");
+      return;
+    }
+
+    const totale = calcolaTotale();
+
+    if (totale <= 0) {
+      setErrore(
+        "Il totale della fattura non è valido."
+      );
+      return;
+    }
+
+    if (!utente || !profilo) {
+      setErrore(
+        "Utente non valido. Effettua nuovamente il login."
+      );
+      return;
+    }
+
+    setSalvataggio(true);
+
+    try {
+      const {
+        data: fattura,
+        error: fatturaError,
+      } = await supabase
+        .from("invoices")
+        .insert({
+          employee_id: utente.id,
+          employee_nome: profilo.nome || "",
+          employee_cognome: profilo.cognome || "",
+          employee_username: profilo.username || "",
+          employee_grado:
+            profilo.grado || "Dipendente",
+          totale: totale,
+        })
+        .select()
+        .single();
+
+      if (fatturaError) {
+        throw fatturaError;
+      }
+
+      const righe = selezion
