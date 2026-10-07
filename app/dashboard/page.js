@@ -99,11 +99,9 @@ export default function DashboardPage() {
           numero_fatture: Number(
             statsData.numero_fatture || 0
           ),
-
           fatturato: Number(
             statsData.fatturato || 0
           ),
-
           stipendio: Number(
             statsData.stipendio || 0
           ),
@@ -144,24 +142,24 @@ export default function DashboardPage() {
           <div
             className="container"
             style={{
-              maxWidth: "1180px",
+              maxWidth: "1100px",
             }}
           >
-            <div
+            <h2
               style={{
-                color: "#d99a2b",
+                color: "#b18a4a",
                 fontSize: "22px",
-                fontWeight: "900",
                 letterSpacing: "1px",
               }}
             >
               ARMERIA 200
-            </div>
+            </h2>
 
             <p
               style={{
-                color: "#777",
+                color: "#686868",
                 marginTop: "10px",
+                fontSize: "13px",
               }}
             >
               Caricamento dashboard...
@@ -202,140 +200,63 @@ export default function DashboardPage() {
         <div
           className="container"
           style={{
-            maxWidth: "1180px",
+            maxWidth: "1100px",
           }}
         >
           {/* ======================== */}
-          {/* BANNER */}
+          {/* HEADER */}
           {/* ======================== */}
 
           <div
             style={{
-              position: "relative",
-
-              width: "100%",
-              height: "300px",
-
               marginBottom: "28px",
+              paddingBottom: "20px",
 
-              borderRadius: "10px",
-
-              overflow: "hidden",
-
-              border:
-                "1px solid rgba(217,154,43,.30)",
-
-              backgroundColor: "#050505",
-
-              backgroundImage:
-                "linear-gradient(90deg, rgba(0,0,0,.80) 0%, rgba(0,0,0,.35) 45%, rgba(0,0,0,.12) 100%), url('/armeria-banner.png')",
-
-              backgroundSize: "cover",
-
-              backgroundPosition: "center",
-
-              boxShadow:
-                "0 20px 55px rgba(0,0,0,.60), 0 0 28px rgba(180,14,14,.10)",
+              borderBottom:
+                "1px solid rgba(177,138,74,.14)",
             }}
           >
-            {/* OMBRA BASSA */}
-
             <div
               style={{
-                position: "absolute",
+                color: "#713737",
 
-                left: 0,
-                right: 0,
-                bottom: 0,
+                fontSize: "10px",
+                fontWeight: "800",
 
-                height: "120px",
+                letterSpacing: "3px",
 
-                background:
-                  "linear-gradient(transparent, rgba(0,0,0,.88))",
-
-                pointerEvents: "none",
-              }}
-            />
-
-            {/* LINEA SUPERIORE */}
-
-            <div
-              style={{
-                position: "absolute",
-
-                top: 0,
-                left: 0,
-                right: 0,
-
-                height: "3px",
-
-                background:
-                  "linear-gradient(90deg, #7b0808, #ed1c16, #d99a2b, #ed1c16, #7b0808)",
-
-                boxShadow:
-                  "0 0 15px rgba(237,28,22,.45)",
-              }}
-            />
-
-            {/* TESTO BANNER */}
-
-            <div
-              style={{
-                position: "absolute",
-
-                left: "32px",
-                bottom: "28px",
-
-                zIndex: 2,
+                marginBottom: "7px",
               }}
             >
-              <div
-                style={{
-                  color: "#d99a2b",
-
-                  fontSize: "10px",
-                  fontWeight: "900",
-
-                  letterSpacing: "4px",
-
-                  marginBottom: "8px",
-
-                  textTransform: "uppercase",
-                }}
-              >
-                Gestionale Dipendenti
-              </div>
-
-              <div
-                style={{
-                  color: "#ffffff",
-
-                  fontSize: "30px",
-                  fontWeight: "900",
-
-                  letterSpacing: "1px",
-
-                  lineHeight: "1.1",
-
-                  textShadow:
-                    "0 3px 10px rgba(0,0,0,.95)",
-                }}
-              >
-                DASHBOARD
-              </div>
-
-              <div
-                style={{
-                  width: "85px",
-                  height: "2px",
-
-                  marginTop: "13px",
-
-                  background:
-                    "linear-gradient(90deg, #ed1c16, #d99a2b)",
-                }}
-              />
+              ARMERIA 200
             </div>
+
+            <h1
+              style={{
+                color: "#dedede",
+
+                fontSize: "30px",
+                fontWeight: "900",
+
+                letterSpacing: "1px",
+
+                margin: 0,
+              }}
+            >
+              Dashboard
+            </h1>
+
+            <p
+              style={{
+                color: "#666",
+
+                marginTop: "7px",
+
+                fontSize: "12px",
+              }}
+            >
+              Gestionale dipendenti
+            </p>
           </div>
 
           {/* ======================== */}
@@ -345,15 +266,18 @@ export default function DashboardPage() {
           <div
             className="card"
             style={{
-              marginBottom: "28px",
+              marginBottom: "30px",
 
-              padding: "25px 28px",
-
-              border:
-                "1px solid rgba(217,154,43,.20)",
+              padding: "25px 27px",
 
               background:
-                "linear-gradient(110deg, rgba(125,8,8,.10), rgba(12,12,12,.96) 45%, rgba(217,154,43,.025))",
+                "linear-gradient(135deg, #111111, #0b0b0b)",
+
+              border:
+                "1px solid rgba(177,138,74,.13)",
+
+              boxShadow:
+                "0 12px 35px rgba(0,0,0,.28)",
             }}
           >
             <div
@@ -375,17 +299,17 @@ export default function DashboardPage() {
               <div>
                 <div
                   style={{
-                    color: "#9a8353",
+                    color: "#777",
 
                     fontSize: "9px",
-                    fontWeight: "900",
+                    fontWeight: "800",
 
                     textTransform:
                       "uppercase",
 
-                    letterSpacing: "2.5px",
+                    letterSpacing: "2px",
 
-                    marginBottom: "8px",
+                    marginBottom: "7px",
                   }}
                 >
                   Benvenuto
@@ -393,12 +317,10 @@ export default function DashboardPage() {
 
                 <div
                   style={{
-                    color: "#f5f5f5",
+                    color: "#e4e4e4",
 
-                    fontSize: "25px",
-                    fontWeight: "900",
-
-                    letterSpacing: ".4px",
+                    fontSize: "24px",
+                    fontWeight: "800",
                   }}
                 >
                   {nomeCompleto ||
@@ -407,9 +329,9 @@ export default function DashboardPage() {
 
                 <div
                   style={{
-                    color: "#707070",
+                    color: "#626262",
 
-                    fontSize: "12px",
+                    fontSize: "11px",
 
                     marginTop: "5px",
                   }}
@@ -418,7 +340,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* GRADO */}
+              {/* RUOLO */}
 
               <div
                 style={{
@@ -429,67 +351,38 @@ export default function DashboardPage() {
                   <div
                     style={{
                       display:
-                        "inline-flex",
+                        "inline-block",
 
-                      alignItems:
-                        "center",
+                      marginBottom: "8px",
 
-                      gap: "6px",
+                      padding: "4px 8px",
 
                       background:
-                        "linear-gradient(90deg, rgba(155,10,10,.20), rgba(217,154,43,.07))",
+                        "rgba(92,35,35,.15)",
 
                       border:
-                        "1px solid rgba(217,154,43,.25)",
+                        "1px solid rgba(113,55,55,.30)",
 
-                      color: "#d99a2b",
+                      borderRadius: "4px",
 
-                      padding:
-                        "4px 9px",
-
-                      borderRadius:
-                        "4px",
+                      color: "#a96666",
 
                       fontSize: "8px",
+                      fontWeight: "800",
 
-                      fontWeight:
-                        "900",
-
-                      letterSpacing:
-                        "1.5px",
-
-                      marginBottom:
-                        "8px",
+                      letterSpacing: "1px",
                     }}
                   >
-                    <span
-                      style={{
-                        width: "5px",
-                        height: "5px",
-
-                        borderRadius:
-                          "50%",
-
-                        background:
-                          "#ed1c16",
-
-                        boxShadow:
-                          "0 0 6px #ed1c16",
-                      }}
-                    />
-
                     ADMIN
                   </div>
                 )}
 
                 <div
                   style={{
-                    color: "#d99a2b",
+                    color: "#b18a4a",
 
-                    fontSize: "18px",
-                    fontWeight: "900",
-
-                    letterSpacing: ".5px",
+                    fontSize: "17px",
+                    fontWeight: "800",
                   }}
                 >
                   {profilo.grado ||
@@ -498,10 +391,9 @@ export default function DashboardPage() {
 
                 <div
                   style={{
-                    color: "#b3b3b3",
+                    color: "#777",
 
                     fontSize: "11px",
-                    fontWeight: "700",
 
                     marginTop: "5px",
                   }}
@@ -509,8 +401,8 @@ export default function DashboardPage() {
                   Percentuale stipendio{" "}
                   <span
                     style={{
-                      color: "#ed1c16",
-                      fontWeight: "900",
+                      color: "#a96666",
+                      fontWeight: "800",
                     }}
                   >
                     {
@@ -524,64 +416,41 @@ export default function DashboardPage() {
           </div>
 
           {/* ======================== */}
-          {/* TITOLO STATISTICHE */}
+          {/* RIEPILOGO */}
           {/* ======================== */}
 
           <div
             style={{
-              display: "flex",
-
-              alignItems: "center",
-
-              gap: "12px",
-
-              marginTop: "34px",
-              marginBottom: "17px",
+              marginBottom: "15px",
             }}
           >
-            <div>
-              <div
-                style={{
-                  color: "#9a1111",
-
-                  fontSize: "9px",
-                  fontWeight: "900",
-
-                  letterSpacing: "3px",
-
-                  marginBottom: "5px",
-                }}
-              >
-                RIEPILOGO
-              </div>
-
-              <h2
-                style={{
-                  color: "#e5e5e5",
-
-                  fontSize: "17px",
-
-                  textTransform:
-                    "uppercase",
-
-                  letterSpacing: "1px",
-                }}
-              >
-                Le tue statistiche
-              </h2>
-            </div>
-
             <div
               style={{
-                flex: 1,
-                height: "1px",
+                color: "#6e5530",
 
-                marginTop: "15px",
+                fontSize: "9px",
+                fontWeight: "800",
 
-                background:
-                  "linear-gradient(90deg, rgba(217,154,43,.25), rgba(180,14,14,.10), transparent)",
+                letterSpacing: "2.5px",
+
+                marginBottom: "6px",
               }}
-            />
+            >
+              RIEPILOGO
+            </div>
+
+            <h2
+              style={{
+                color: "#cfcfcf",
+
+                fontSize: "17px",
+                fontWeight: "800",
+
+                letterSpacing: ".5px",
+              }}
+            >
+              Le tue statistiche
+            </h2>
           </div>
 
           {/* ======================== */}
@@ -601,7 +470,6 @@ export default function DashboardPage() {
             }}
           >
             <StatCard
-              simbolo="$"
               titolo="Fatturato personale"
               valore={formattaSoldi(
                 stats.fatturato
@@ -610,7 +478,6 @@ export default function DashboardPage() {
             />
 
             <StatCard
-              simbolo="%"
               titolo="Stipendio maturato"
               valore={formattaSoldi(
                 stats.stipendio
@@ -619,7 +486,6 @@ export default function DashboardPage() {
             />
 
             <StatCard
-              simbolo="#"
               titolo="Fatture effettuate"
               valore={
                 stats.numero_fatture
@@ -635,57 +501,38 @@ export default function DashboardPage() {
           <div
             className="card"
             style={{
-              marginTop: "20px",
+              padding: "24px 27px",
 
-              padding: "25px 28px",
+              background: "#0d0d0d",
 
               border:
-                "1px solid rgba(217,154,43,.12)",
+                "1px solid rgba(255,255,255,.055)",
 
-              background:
-                "linear-gradient(135deg, rgba(15,15,15,.97), rgba(7,7,7,.98))",
+              boxShadow:
+                "0 10px 30px rgba(0,0,0,.22)",
             }}
           >
             <div
               style={{
-                display: "flex",
+                color: "#713737",
 
-                alignItems: "center",
+                fontSize: "9px",
+                fontWeight: "800",
 
-                gap: "8px",
+                letterSpacing: "2.5px",
 
-                marginBottom: "10px",
+                marginBottom: "9px",
               }}
             >
-              <div
-                style={{
-                  width: "22px",
-                  height: "2px",
-
-                  background: "#ed1c16",
-                }}
-              />
-
-              <div
-                style={{
-                  color: "#d99a2b",
-
-                  fontSize: "9px",
-                  fontWeight: "900",
-
-                  letterSpacing: "3px",
-                }}
-              >
-                ARMERIA 200
-              </div>
+              ARMERIA 200
             </div>
 
             <div
               style={{
-                color: "#eeeeee",
+                color: "#d0d0d0",
 
-                fontSize: "17px",
-                fontWeight: "900",
+                fontSize: "16px",
+                fontWeight: "800",
 
                 marginBottom: "8px",
               }}
@@ -695,7 +542,7 @@ export default function DashboardPage() {
 
             <p
               style={{
-                color: "#777",
+                color: "#686868",
 
                 fontSize: "12px",
 
@@ -726,7 +573,6 @@ export default function DashboardPage() {
 // ==============================
 
 function StatCard({
-  simbolo,
   titolo,
   valore,
   descrizione,
@@ -735,123 +581,59 @@ function StatCard({
     <div
       className="card"
       style={{
-        position: "relative",
-
-        minHeight: "150px",
+        minHeight: "135px",
 
         padding: "22px",
 
-        overflow: "hidden",
+        background:
+          "linear-gradient(145deg, #101010, #0b0b0b)",
 
         border:
-          "1px solid rgba(217,154,43,.14)",
+          "1px solid rgba(255,255,255,.055)",
 
-        background:
-          "linear-gradient(145deg, rgba(17,17,17,.98), rgba(7,7,7,.98))",
+        boxShadow:
+          "0 10px 28px rgba(0,0,0,.22)",
       }}
     >
-      {/* SIMBOLO */}
-
       <div
         style={{
-          position: "absolute",
-
-          top: "17px",
-          right: "18px",
-
-          width: "30px",
-          height: "30px",
-
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-
-          border:
-            "1px solid rgba(180,14,14,.30)",
-
-          borderRadius: "5px",
-
-          background:
-            "rgba(125,8,8,.10)",
-
-          color: "#a91712",
-
-          fontSize: "13px",
-          fontWeight: "900",
-        }}
-      >
-        {simbolo}
-      </div>
-
-      {/* TITOLO */}
-
-      <div
-        style={{
-          color: "#8d8d8d",
+          color: "#727272",
 
           fontSize: "9px",
-          fontWeight: "800",
+          fontWeight: "700",
 
           textTransform: "uppercase",
 
-          letterSpacing: "1.5px",
+          letterSpacing: "1.3px",
 
-          marginBottom: "12px",
-
-          paddingRight: "40px",
+          marginBottom: "11px",
         }}
       >
         {titolo}
       </div>
 
-      {/* VALORE */}
-
       <div
         style={{
-          color: "#d99a2b",
+          color: "#b18a4a",
 
-          fontSize: "27px",
-          fontWeight: "900",
+          fontSize: "26px",
+          fontWeight: "800",
 
           marginBottom: "10px",
-
-          letterSpacing: ".3px",
-
-          textShadow:
-            "0 2px 8px rgba(0,0,0,.6)",
         }}
       >
         {valore}
       </div>
 
-      {/* DESCRIZIONE */}
-
       <div
         style={{
-          color: "#595959",
+          color: "#565656",
 
           fontSize: "10px",
         }}
       >
         {descrizione}
       </div>
-
-      {/* DETTAGLIO IN BASSO */}
-
-      <div
-        style={{
-          position: "absolute",
-
-          left: "22px",
-          bottom: 0,
-
-          width: "55px",
-          height: "2px",
-
-          background:
-            "linear-gradient(90deg, #a90d0d, #d99a2b)",
-        }}
-      />
     </div>
   );
 }
