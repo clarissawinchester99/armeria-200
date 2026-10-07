@@ -117,6 +117,11 @@ export default function Sidebar() {
       icona: "⚙",
     },
     {
+      nome: "Gestione Import",
+      percorso: "/admin/import",
+      icona: "↓",
+    },
+    {
       nome: "Storico Stipendi",
       percorso: "/storico-stipendi",
       icona: "₿",
@@ -130,6 +135,10 @@ export default function Sidebar() {
 
     if (percorso === "/admin/catalogo") {
       return pathname === "/admin/catalogo";
+    }
+
+    if (percorso === "/admin/import") {
+      return pathname === "/admin/import";
     }
 
     if (percorso === "/storico-stipendi") {
