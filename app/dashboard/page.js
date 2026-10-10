@@ -10,6 +10,9 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
   const [profilo, setProfilo] = useState(null);
+  const [erroreCassa, setErroreCassa] = useState("");
+
+  const [fondoCassa, setFondoCassa] = useState(null);
 
   const [stats, setStats] = useState({
     fatturato: 0,
@@ -70,7 +73,7 @@ export default function DashboardPage() {
       setProfilo(profiloData);
 
       // ==============================
-      // STATISTICHE
+      // STATISTICHE DIPENDENTE
       // ==============================
 
       const {
@@ -103,6 +106,37 @@ export default function DashboardPage() {
           ),
         });
       }
+
+      // ==============================
+      // FONDO CASSA
+      // ==============================
+
+      const {
+        data: cassaData,
+        error: cassaError,
+      } = await supabase
+        .from("impostazioni")
+        .select("valore")
+        .eq("chiave", "fondo_cassa")
+        .maybeSingle();
+
+      if (cassaError) {
+        console.error(
+          "Errore caricamento Fondo Cassa:",
+          cassaError
+        );
+
+        setErroreCassa(
+          "Impossibile caricare il Fondo Cassa."
+        );
+      } else if (!cassaData) {
+        setErroreCassa(
+          "Fondo Cassa non disponibile."
+        );
+      } else {
+        setFondoCassa(Number(cassaData.valore));
+        setErroreCassa("");
+      }
     } catch (error) {
       console.error(
         "Errore caricamento dashboard:",
@@ -113,14 +147,19 @@ export default function DashboardPage() {
     }
   }
 
+  // ==============================
+  // FORMATTA SOLDI
+  // ==============================
+
   function formattaSoldi(numero) {
     return `$${new Intl.NumberFormat("it-IT", {
+      minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(Number(numero || 0))}`;
   }
 
   // ==============================
-  // LOADING
+  // CARICAMENTO
   // ==============================
 
   if (loading) {
@@ -137,9 +176,7 @@ export default function DashboardPage() {
         >
           <div
             className="container"
-            style={{
-              maxWidth: "1100px",
-            }}
+            style={{ maxWidth: "1100px" }}
           >
             <h2
               style={{
@@ -152,7 +189,7 @@ export default function DashboardPage() {
 
             <p
               style={{
-                color: "#888",
+                color: "#888888",
                 marginTop: "10px",
               }}
             >
@@ -168,8 +205,7 @@ export default function DashboardPage() {
     return null;
   }
 
-  const admin =
-    profilo.ruolo === "admin";
+  const admin = profilo.ruolo === "admin";
 
   const nomeCompleto =
     `${profilo.nome || ""} ${
@@ -189,19 +225,13 @@ export default function DashboardPage() {
       >
         <div
           className="container"
-          style={{
-            maxWidth: "1100px",
-          }}
+          style={{ maxWidth: "1100px" }}
         >
           {/* ======================== */}
           {/* HEADER */}
           {/* ======================== */}
 
-          <div
-            style={{
-              marginBottom: "30px",
-            }}
-          >
+          <div style={{ marginBottom: "30px" }}>
             <h1
               style={{
                 color: "#ffffff",
@@ -220,8 +250,7 @@ export default function DashboardPage() {
                 fontSize: "14px",
               }}
             >
-              Benvenuto nel gestionale
-              Armeria 200
+              Benvenuto nel gestionale Armeria 200
             </p>
           </div>
 
@@ -231,15 +260,12 @@ export default function DashboardPage() {
 
           <div
             className="card"
-            style={{
-              marginBottom: "25px",
-            }}
+            style={{ marginBottom: "25px" }}
           >
             <div
               style={{
                 display: "flex",
-                justifyContent:
-                  "space-between",
+                justifyContent: "space-between",
                 alignItems: "center",
                 gap: "25px",
                 flexWrap: "wrap",
@@ -251,8 +277,7 @@ export default function DashboardPage() {
                     color: "#888888",
                     fontSize: "12px",
                     fontWeight: "700",
-                    textTransform:
-                      "uppercase",
+                    textTransform: "uppercase",
                     letterSpacing: "1px",
                     marginBottom: "7px",
                   }}
@@ -267,8 +292,7 @@ export default function DashboardPage() {
                     fontWeight: "800",
                   }}
                 >
-                  {nomeCompleto ||
-                    profilo.username}
+                  {nomeCompleto || profilo.username}
                 </div>
 
                 <div
@@ -282,16 +306,11 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div
-                style={{
-                  textAlign: "right",
-                }}
-              >
+              <div style={{ textAlign: "right" }}>
                 {admin && (
                   <div
                     style={{
-                      display:
-                        "inline-block",
+                      display: "inline-block",
                       marginBottom: "8px",
                       padding: "4px 8px",
                       background:
@@ -316,8 +335,7 @@ export default function DashboardPage() {
                     fontWeight: "800",
                   }}
                 >
-                  {profilo.grado ||
-                    "Dipendente"}
+                  {profilo.grado || "Dipendente"}
                 </div>
 
                 <div
@@ -334,10 +352,7 @@ export default function DashboardPage() {
                       fontWeight: "800",
                     }}
                   >
-                    {
-                      profilo.percentuale_stipendio
-                    }
-                    %
+                    {profilo.percentuale_stipendio}%
                   </span>
                 </div>
               </div>
@@ -370,27 +385,88 @@ export default function DashboardPage() {
           >
             <StatCard
               titolo="Fatturato personale"
-              valore={formattaSoldi(
-                stats.fatturato
-              )}
+              valore={formattaSoldi(stats.fatturato)}
               descrizione="Totale delle tue fatture valide"
             />
 
             <StatCard
               titolo="Stipendio maturato"
-              valore={formattaSoldi(
-                stats.stipendio
-              )}
+              valore={formattaSoldi(stats.stipendio)}
               descrizione={`Calcolato al ${profilo.percentuale_stipendio}%`}
             />
 
             <StatCard
               titolo="Fatture effettuate"
-              valore={
-                stats.numero_fatture
-              }
+              valore={stats.numero_fatture}
               descrizione="Numero di fatture valide"
             />
+          </div>
+
+          {/* ======================== */}
+          {/* FONDO CASSA */}
+          {/* ======================== */}
+
+          <h2
+            style={{
+              color: "#ffffff",
+              fontSize: "19px",
+              fontWeight: "800",
+              marginBottom: "15px",
+            }}
+          >
+            Fondo Cassa
+          </h2>
+
+          <div
+            className="card"
+            style={{
+              marginBottom: "30px",
+              border:
+                "1px solid rgba(139,30,30,0.35)",
+              padding: "27px",
+            }}
+          >
+            <div
+              style={{
+                color: "#aaaaaa",
+                fontSize: "12px",
+                fontWeight: "700",
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                marginBottom: "12px",
+              }}
+            >
+              Fondo Cassa Armeria 200
+            </div>
+
+            <div
+              style={{
+                color: "#ffffff",
+                fontSize: "34px",
+                fontWeight: "900",
+                marginBottom: "10px",
+              }}
+            >
+              {erroreCassa
+                ? "Non disponibile"
+                : fondoCassa === null
+                ? "Caricamento..."
+                : formattaSoldi(fondoCassa)}
+            </div>
+
+            <p
+              style={{
+                color: erroreCassa
+                  ? "#ff7777"
+                  : "#888888",
+                fontSize: "12px",
+                lineHeight: "1.6",
+                margin: 0,
+              }}
+            >
+              {erroreCassa ||
+                "Saldo aggiornato con le fatture e gli acquisti di import."}
+            </p>
           </div>
 
           {/* ======================== */}
@@ -418,12 +494,10 @@ export default function DashboardPage() {
                 maxWidth: "760px",
               }}
             >
-              Utilizza il menu a
-              sinistra per registrare
-              fatture, effettuare ordini
-              di import, consultare gli
-              storici e controllare il
-              tuo stipendio.
+              Utilizza il menu a sinistra per
+              registrare fatture, effettuare ordini
+              di import, consultare gli storici e
+              controllare il tuo stipendio.
               {admin &&
                 " Le funzioni di amministrazione sono disponibili nella sezione dedicata."}
             </p>
@@ -438,11 +512,7 @@ export default function DashboardPage() {
 // STAT CARD
 // ==============================
 
-function StatCard({
-  titolo,
-  valore,
-  descrizione,
-}) {
+function StatCard({ titolo, valore, descrizione }) {
   return (
     <div
       className="card"
