@@ -1155,3 +1155,1049 @@ export default function AdminPage() {
               </div>
             </form>
           </div>
+
+          {/* =====================================================
+              GESTIONE STIPENDI
+          ===================================================== */}
+
+          <div
+            className="card"
+            style={{
+              marginBottom: "35px",
+              border: "1px solid rgba(139,30,30,.45)",
+            }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "11px",
+                fontWeight: "900",
+                letterSpacing: "3px",
+                marginBottom: "8px",
+              }}
+            >
+              CONTABILITÀ PERSONALE
+            </div>
+
+            <h2>Gestione Stipendi</h2>
+
+            <p
+              style={{
+                color: "#999",
+                fontSize: "13px",
+                lineHeight: "1.7",
+                marginTop: "10px",
+                marginBottom: "22px",
+              }}
+            >
+              Gli stipendi vengono calcolati per settimane,
+              dalla domenica al sabato. Ogni domenica il
+              fatturato corrente riparte da zero.
+              Gli stipendi non pagati rimangono disponibili
+              come arretrati e possono essere saldati
+              successivamente.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "15px",
+                marginBottom: "25px",
+              }}
+            >
+              <StatCard
+                titolo="Stipendi da pagare"
+                valore={formattaSoldi(totaleArretrati)}
+              />
+
+              <StatCard
+                titolo="Pagamenti in sospeso"
+                valore={cicliDaPagare.length}
+              />
+
+              <StatCard
+                titolo="Stipendi già pagati"
+                valore={cicliPagati.length}
+              />
+            </div>
+
+            {/* STIPENDI DA PAGARE */}
+
+            <h3
+              style={{
+                marginBottom: "15px",
+                color: "#fff",
+              }}
+            >
+              Stipendi da pagare
+            </h3>
+
+            {cicliDaPagare.length === 0 ? (
+              <div
+                style={{
+                  padding: "20px",
+                  border: "1px solid rgba(139,30,30,.3)",
+                  borderRadius: "8px",
+                  color: "#999",
+                  marginBottom: "25px",
+                }}
+              >
+                Nessuno stipendio arretrato da pagare.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: "15px",
+                  marginBottom: "30px",
+                }}
+              >
+                {cicliDaPagare.map((ciclo) => {
+                  const nome =
+                    `${ciclo.employee_nome || ""} ${
+                      ciclo.employee_cognome || ""
+                    }`.trim() ||
+                    ciclo.employee_username ||
+                    "Dipendente";
+
+                  const fineSettimana = new Date(
+                    new Date(ciclo.periodo_a).getTime() - 1000
+                  ).toISOString();
+
+                  return (
+                    <div
+                      key={ciclo.id}
+                      style={{
+                        background: "#111",
+                        border:
+                          "1px solid rgba(196,42,42,.5)",
+                        borderRadius: "10px",
+                        padding: "18px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: "10px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <strong
+                          style={{
+                            color: "#fff",
+                            fontSize: "16px",
+                          }}
+                        >
+                          {nome}
+                        </strong>
+
+                        <span
+                          style={{
+                            color: "#ff7777",
+                            fontSize: "10px",
+                            fontWeight: "900",
+                            letterSpacing: "1px",
+                          }}
+                        >
+                          DA PAGARE
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          color: "#aaa",
+                          fontSize: "12px",
+                          lineHeight: "1.9",
+                        }}
+                      >
+                        <div>
+                          Settimana:{" "}
+                          {formattaSoloData(ciclo.periodo_da)}
+                          {" - "}
+                          {formattaSoloData(fineSettimana)}
+                        </div>
+
+                        <div>
+                          Grado:{" "}
+                          {ciclo.employee_grado || "—"}
+                        </div>
+
+                        <div>
+                          Fatture: {ciclo.numero_fatture}
+                        </div>
+
+                        <div>
+                          Fatturato:{" "}
+                          {formattaSoldi(
+                            ciclo.fatturato_periodo
+                          )}
+                        </div>
+
+                        <div>
+                          Percentuale:{" "}
+                          {ciclo.percentuale_stipendio}%
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          color: "#fff",
+                          fontSize: "24px",
+                          fontWeight: "900",
+                          marginTop: "14px",
+                          marginBottom: "14px",
+                        }}
+                      >
+                        {formattaSoldi(
+                          ciclo.stipendio_maturato
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ width: "100%" }}
+                        disabled={
+                          pagamentoStipendio !== null ||
+                          Number(ciclo.stipendio_maturato) <= 0
+                        }
+                        onClick={() =>
+                          pagaCicloStipendio(ciclo)
+                        }
+                      >
+                        {pagamentoStipendio === ciclo.id
+                          ? "Pagamento in corso..."
+                          : "PAGA STIPENDIO"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* STIPENDI PAGATI */}
+
+            <h3
+              style={{
+                color: "#fff",
+                marginBottom: "15px",
+              }}
+            >
+              Stipendi pagati
+            </h3>
+
+            {cicliPagati.length === 0 ? (
+              <p
+                style={{
+                  color: "#777",
+                  fontSize: "13px",
+                }}
+              >
+                Nessun pagamento ancora registrato.
+              </p>
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                {cicliPagati.map((ciclo) => {
+                  const nome =
+                    `${ciclo.employee_nome || ""} ${
+                      ciclo.employee_cognome || ""
+                    }`.trim() ||
+                    ciclo.employee_username ||
+                    "Dipendente";
+
+                  return (
+                    <div
+                      key={ciclo.id}
+                      style={{
+                        padding: "18px",
+                        background: "#111",
+                        border:
+                          "1px solid rgba(255,255,255,.08)",
+                        borderRadius: "10px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: "15px",
+                          marginBottom: "15px",
+                        }}
+                      >
+                        <div>
+                          <strong
+                            style={{
+                              color: "#fff",
+                              fontSize: "16px",
+                            }}
+                          >
+                            {nome}
+                          </strong>
+
+                          <div
+                            style={{
+                              color: "#888",
+                              fontSize: "12px",
+                              marginTop: "6px",
+                            }}
+                          >
+                            Settimana del{" "}
+                            {formattaSoloData(
+                              ciclo.periodo_da
+                            )}
+                          </div>
+
+                          <div
+                            style={{
+                              color: "#888",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            Pagato il{" "}
+                            {formattaData(ciclo.pagato_il)}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            textAlign: "right",
+                          }}
+                        >
+                          <strong
+                            style={{
+                              color: "#fff",
+                              fontSize: "20px",
+                            }}
+                          >
+                            {formattaSoldi(
+                              ciclo.stipendio_maturato
+                            )}
+                          </strong>
+
+                          <div
+                            style={{
+                              color: "#8ccf9b",
+                              fontSize: "11px",
+                              fontWeight: "900",
+                              marginTop: "5px",
+                            }}
+                          >
+                            PAGATO
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* PULSANTE ANNULLA PAGAMENTO */}
+
+                      <button
+                        type="button"
+                        className="btn btn-dark"
+                        style={{
+                          width: "100%",
+                          border:
+                            "1px solid rgba(196,42,42,.65)",
+                          color: "#ff7777",
+                          fontWeight: "900",
+                        }}
+                        disabled={pagamentoStipendio !== null}
+                        onClick={() =>
+                          annullaPagamentoStipendio(ciclo)
+                        }
+                      >
+                        {pagamentoStipendio === ciclo.id
+                          ? "Annullamento in corso..."
+                          : "ANNULLA PAGAMENTO"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* =====================================================
+              GESTIONE IMPORT
+          ===================================================== */}
+
+          <div
+            className="card"
+            style={{
+              marginBottom: "20px",
+              border: "1px solid rgba(139,30,30,.35)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "20px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    color: "#c42a2a",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    letterSpacing: "3px",
+                    marginBottom: "7px",
+                  }}
+                >
+                  ORDINI MATERIALI
+                </div>
+
+                <h2>Gestione Import</h2>
+
+                <p
+                  style={{
+                    color: "#777",
+                    fontSize: "13px",
+                    marginTop: "7px",
+                  }}
+                >
+                  Visualizza e controlla gli ordini dei
+                  materiali dell&apos;Armeria.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => router.push("/storico-import")}
+              >
+                Storico Import
+              </button>
+            </div>
+          </div>
+
+          {/* =====================================================
+              CATALOGO
+          ===================================================== */}
+
+          <div
+            className="card"
+            style={{
+              marginBottom: "35px",
+              border: "1px solid rgba(139,30,30,.35)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "20px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    color: "#c42a2a",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    letterSpacing: "3px",
+                    marginBottom: "7px",
+                  }}
+                >
+                  CATALOGO ARMERIA
+                </div>
+
+                <h2>Gestione Prodotti</h2>
+
+                <p
+                  style={{
+                    color: "#777",
+                    fontSize: "13px",
+                    marginTop: "7px",
+                  }}
+                >
+                  Gestisci gli articoli e i prezzi
+                  del catalogo.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => router.push("/admin/catalogo")}
+              >
+                Gestisci Catalogo
+              </button>
+            </div>
+          </div>
+
+          {/* =====================================================
+              ASSUMI DIPENDENTE
+          ===================================================== */}
+
+          <div
+            className="card"
+            style={{ marginBottom: "35px" }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "11px",
+                fontWeight: "bold",
+                letterSpacing: "3px",
+                marginBottom: "7px",
+              }}
+            >
+              PERSONALE
+            </div>
+
+            <h2 style={{ marginBottom: "22px" }}>
+              Assumi dipendente
+            </h2>
+
+            <form onSubmit={creaDipendente}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: "15px",
+                }}
+              >
+                <Campo
+                  label="Nome"
+                  value={nuovoDipendente.nome}
+                  onChange={(value) =>
+                    modificaNuovoDipendente("nome", value)
+                  }
+                />
+
+                <Campo
+                  label="Cognome"
+                  value={nuovoDipendente.cognome}
+                  onChange={(value) =>
+                    modificaNuovoDipendente("cognome", value)
+                  }
+                />
+
+                <Campo
+                  label="Username"
+                  value={nuovoDipendente.username}
+                  onChange={(value) =>
+                    modificaNuovoDipendente("username", value)
+                  }
+                />
+
+                <Campo
+                  label="Password"
+                  type="password"
+                  minLength={6}
+                  value={nuovoDipendente.password}
+                  onChange={(value) =>
+                    modificaNuovoDipendente("password", value)
+                  }
+                />
+
+                <div className="form-group">
+                  <label>Grado</label>
+
+                  <select
+                    value={nuovoDipendente.grado}
+                    onChange={(event) =>
+                      modificaNuovoDipendente(
+                        "grado",
+                        event.target.value
+                      )
+                    }
+                  >
+                    {Object.entries(GRADI).map(
+                      ([grado, percentuale]) => (
+                        <option key={grado} value={grado}>
+                          {grado} — {percentuale}%
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={creazione}
+              >
+                {creazione
+                  ? "Creazione..."
+                  : "Assumi Dipendente"}
+              </button>
+            </form>
+          </div>
+
+          {/* =====================================================
+              PERSONALE
+          ===================================================== */}
+
+          <div style={{ marginBottom: "40px" }}>
+            <h2
+              style={{
+                marginBottom: "15px",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+              }}
+            >
+              Personale
+            </h2>
+
+            {dipendenti.length === 0 ? (
+              <div className="card">
+                Nessun dipendente registrato.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(300px, 1fr))",
+                  gap: "15px",
+                }}
+              >
+                {dipendenti.map((dipendente) => (
+                  <div
+                    className="card"
+                    key={dipendente.id}
+                    style={{
+                      opacity: dipendente.attivo ? 1 : 0.55,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "15px",
+                        marginBottom: "15px",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            fontSize: "18px",
+                            fontWeight: "900",
+                          }}
+                        >
+                          {dipendente.nome}{" "}
+                          {dipendente.cognome}
+                        </div>
+
+                        <div
+                          style={{
+                            color: "#777",
+                            fontSize: "12px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          @{dipendente.username || "—"}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          color: dipendente.attivo
+                            ? "#c42a2a"
+                            : "#777",
+                          fontSize: "11px",
+                          fontWeight: "900",
+                        }}
+                      >
+                        {dipendente.attivo
+                          ? "ATTIVO"
+                          : "DISATTIVATO"}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        color: "#aaa",
+                        fontSize: "13px",
+                        lineHeight: "1.9",
+                        marginBottom: "15px",
+                      }}
+                    >
+                      <div>
+                        Grado:{" "}
+                        <strong style={{ color: "#fff" }}>
+                          {dipendente.grado}
+                        </strong>
+                      </div>
+
+                      <div>
+                        Percentuale:{" "}
+                        <strong style={{ color: "#fff" }}>
+                          {dipendente.percentuale_stipendio}%
+                        </strong>
+                      </div>
+
+                      <div>
+                        Fatture settimana corrente:{" "}
+                        <strong style={{ color: "#fff" }}>
+                          {dipendente.numero_fatture}
+                        </strong>
+                      </div>
+
+                      <div>
+                        Fatturato settimana corrente:{" "}
+                        <strong style={{ color: "#fff" }}>
+                          {formattaSoldi(dipendente.fatturato)}
+                        </strong>
+                      </div>
+
+                      <div>
+                        Stipendio in maturazione:{" "}
+                        <strong
+                          style={{
+                            color: "#fff",
+                            fontSize: "16px",
+                          }}
+                        >
+                          {formattaSoldi(dipendente.stipendio)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {dipendente.ruolo !== "admin" ? (
+                      <>
+                        <div className="form-group">
+                          <label>Grado</label>
+
+                          <select
+                            value={dipendente.grado}
+                            disabled={
+                              salvataggio === dipendente.id ||
+                              eliminazione === dipendente.id
+                            }
+                            onChange={(event) =>
+                              cambiaGrado(
+                                dipendente,
+                                event.target.value
+                              )
+                            }
+                          >
+                            {Object.entries(GRADI).map(
+                              ([grado, percentuale]) => (
+                                <option
+                                  key={grado}
+                                  value={grado}
+                                >
+                                  {grado} — {percentuale}%
+                                </option>
+                              )
+                            )}
+                          </select>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "10px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-dark"
+                            disabled={
+                              salvataggio === dipendente.id ||
+                              eliminazione === dipendente.id
+                            }
+                            onClick={() =>
+                              cambiaStatoDipendente(dipendente)
+                            }
+                          >
+                            {dipendente.attivo
+                              ? "Disattiva Dipendente"
+                              : "Riattiva Dipendente"}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            disabled={
+                              eliminazione === dipendente.id ||
+                              salvataggio === dipendente.id
+                            }
+                            onClick={() =>
+                              eliminaDipendente(dipendente)
+                            }
+                            style={{
+                              background: "#7a1010",
+                              borderColor: "#a51d1d",
+                            }}
+                          >
+                            {eliminazione === dipendente.id
+                              ? "Eliminazione..."
+                              : "Elimina definitivamente"}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div
+                        style={{
+                          color: "#c42a2a",
+                          fontSize: "11px",
+                          fontWeight: "900",
+                          letterSpacing: "2px",
+                        }}
+                      >
+                        ACCOUNT AMMINISTRATORE
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* =====================================================
+              ULTIME FATTURE
+          ===================================================== */}
+
+          <div>
+            <h2
+              style={{
+                marginBottom: "15px",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+              }}
+            >
+              Ultime Fatture
+            </h2>
+
+            {fatture.length === 0 ? (
+              <div className="card">
+                <p style={{ color: "#777" }}>
+                  Nessuna fattura registrata.
+                </p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                {fatture.map((fattura) => {
+                  const dati = datiStoriciFattura(fattura);
+
+                  return (
+                    <div
+                      className="card"
+                      key={fattura.id}
+                      style={{
+                        opacity: fattura.annullata
+                          ? 0.55
+                          : 1,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent:
+                            "space-between",
+                          alignItems: "center",
+                          gap: "20px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontWeight: "900",
+                              fontSize: "16px",
+                            }}
+                          >
+                            {dati.nome}
+                          </div>
+
+                          {dati.username && (
+                            <div
+                              style={{
+                                color: "#777",
+                                fontSize: "11px",
+                                marginTop: "3px",
+                              }}
+                            >
+                              @{dati.username}
+                            </div>
+                          )}
+
+                          <div
+                            style={{
+                              color: "#777",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {dati.grado}
+
+                            {dati.eliminato && (
+                              <span
+                                style={{
+                                  color: "#c42a2a",
+                                  fontWeight: "900",
+                                }}
+                              >
+                                {" • "}ACCOUNT ELIMINATO
+                              </span>
+                            )}
+
+                            {" • "}
+                            {formattaData(fattura.created_at)}
+                          </div>
+
+                          {fattura.annullata && (
+                            <div
+                              style={{
+                                color: "#c42a2a",
+                                fontWeight: "900",
+                                fontSize: "11px",
+                                marginTop: "7px",
+                              }}
+                            >
+                              FATTURA ANNULLATA
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "15px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: "20px",
+                              fontWeight: "900",
+                            }}
+                          >
+                            {formattaSoldi(fattura.totale)}
+                          </div>
+
+                          {fattura.annullata ? (
+                            <button
+                              type="button"
+                              className="btn btn-dark"
+                              disabled={
+                                azioneFattura === fattura.id
+                              }
+                              onClick={() =>
+                                ripristinaFattura(fattura)
+                              }
+                            >
+                              {azioneFattura === fattura.id
+                                ? "Attendi..."
+                                : "Ripristina"}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn-dark"
+                              disabled={
+                                azioneFattura === fattura.id
+                              }
+                              onClick={() =>
+                                annullaFattura(fattura)
+                              }
+                            >
+                              {azioneFattura === fattura.id
+                                ? "Attendi..."
+                                : "Annulla"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </>
+  );
+}
+
+// =========================================================
+// COMPONENTE CAMPO FORM
+// =========================================================
+
+function Campo({
+  label,
+  value,
+  onChange,
+  type = "text",
+  minLength,
+}) {
+  return (
+    <div className="form-group">
+      <label>{label}</label>
+
+      <input
+        type={type}
+        value={value}
+        minLength={minLength}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        required
+      />
+    </div>
+  );
+}
+
+// =========================================================
+// COMPONENTE CARD STATISTICA
+// =========================================================
+
+function StatCard({ titolo, valore }) {
+  return (
+    <div className="card">
+      <div
+        style={{
+          color: "#777",
+          fontSize: "11px",
+          textTransform: "uppercase",
+          letterSpacing: "1.5px",
+          marginBottom: "10px",
+        }}
+      >
+        {titolo}
+      </div>
+
+      <div
+        style={{
+          fontSize: "28px",
+          fontWeight: "900",
+        }}
+      >
+        {valore}
+      </div>
+    </div>
+  );
+}
