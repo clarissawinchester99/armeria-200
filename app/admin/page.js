@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -23,6 +24,7 @@ export default function AdminPage() {
   const [dipendenti, setDipendenti] = useState([]);
   const [fatture, setFatture] = useState([]);
   const [imports, setImports] = useState([]);
+  const [cicliStipendi, setCicliStipendi] = useState([]);
 
   const [fondoCassa, setFondoCassa] = useState(0);
   const [nuovoFondoCassa, setNuovoFondoCassa] = useState("");
@@ -32,8 +34,6 @@ export default function AdminPage() {
   const [salvataggio, setSalvataggio] = useState(null);
   const [eliminazione, setEliminazione] = useState(null);
   const [azioneFattura, setAzioneFattura] = useState(null);
-
-  // NUOVO: pagamento stipendio
   const [pagamentoStipendio, setPagamentoStipendio] =
     useState(null);
 
@@ -89,6 +89,7 @@ export default function AdminPage() {
         caricaFatture(),
         caricaImports(),
         caricaFondoCassa(),
+        caricaCicliStipendi(),
       ]);
     } catch (error) {
       console.error("Errore caricamento Admin:", error);
@@ -176,6 +177,25 @@ export default function AdminPage() {
     } finally {
       setSalvataggioFondo(false);
     }
+  }
+
+  // =========================================================
+  // CICLI STIPENDI: REGISTRO SETTIMANALE
+  // =========================================================
+
+  async function caricaCicliStipendi() {
+    const { data, error } = await supabase
+      .from("cicli_stipendi")
+      .select(
+        "id, employee_id, employee_nome, employee_cognome, employee_username, employee_grado, percentuale_stipendio, periodo_da, periodo_a, numero_fatture, fatturato_periodo, stipendio_maturato, stato, pagato_il"
+      )
+      .order("periodo_da", { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    setCicliStipendi(data || []);
   }
 
   // =========================================================
@@ -441,7 +461,7 @@ export default function AdminPage() {
   }
 
   // =========================================================
-  // ATTIVA / DISATTIVA
+  // ATTIVA / DISATTIVA DIPENDENTE
   // =========================================================
 
   async function cambiaStatoDipendente(
@@ -487,6 +507,7 @@ export default function AdminPage() {
     }
   }
 
+
   // =========================================================
   // ELIMINA DIPENDENTE
   // =========================================================
@@ -498,12 +519,13 @@ export default function AdminPage() {
       }`.trim();
 
     const conferma = window.confirm(
-      `ATTENZIONE!\n\nVuoi eliminare definitivamente ${nomeCompleto} (@${dipendente.username})?\n\nL'account non potrà più accedere al gestionale.\n\nLe sue vecchie fatture e i suoi import resteranno nello storico.\n\nQuesta operazione non può essere annullata.`
+      `ATTENZIONE!\n\nVuoi eliminare definitivamente ${nomeCompleto} (@${dipendente.username})?\n\n` +
+      `L'account non potrà più accedere al gestionale.\n\n` +
+      `Le vecchie fatture, gli import e gli stipendi registrati resteranno nello storico.\n\n` +
+      `Questa operazione non può essere annullata.`
     );
 
-    if (!conferma) {
-      return;
-    }
+    if (!conferma) return;
 
     setErrore("");
     setSuccesso("");
@@ -524,12 +546,10 @@ export default function AdminPage() {
         "/api/admin/delete-user",
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
-
           body: JSON.stringify({
             user_id: dipendente.id,
           }),
@@ -547,7 +567,7 @@ export default function AdminPage() {
       if (!response.ok) {
         throw new Error(
           risultato?.error ||
-            `Errore eliminazione dipendente (${response.status}).`
+          `Errore eliminazione dipendente (${response.status}).`
         );
       }
 
@@ -559,16 +579,13 @@ export default function AdminPage() {
         caricaDipendenti(),
         caricaFatture(),
         caricaImports(),
+        caricaCicliStipendi(),
       ]);
     } catch (error) {
-      console.error(
-        "Errore eliminazione dipendente:",
-        error
-      );
-
+      console.error("Errore eliminazione dipendente:", error);
       setErrore(
         error?.message ||
-          "Errore durante l'eliminazione del dipendente."
+        "Errore durante l'eliminazione del dipendente."
       );
     } finally {
       setEliminazione(null);
@@ -587,32 +604,23 @@ export default function AdminPage() {
     try {
       const { error } = await supabase.rpc(
         "annulla_fattura",
-        {
-          fattura_id: fattura.id,
-        }
+        { fattura_id: fattura.id }
       );
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      setSuccesso(
-        "Fattura annullata correttamente."
-      );
+      setSuccesso("Fattura annullata correttamente.");
 
       await Promise.all([
         caricaFatture(),
         caricaDipendenti(),
+        caricaFondoCassa(),
       ]);
     } catch (error) {
-      console.error(
-        "Errore annullamento fattura:",
-        error
-      );
-
+      console.error("Errore annullamento fattura:", error);
       setErrore(
         error?.message ||
-          "Errore durante l'annullamento della fattura."
+        "Errore durante l'annullamento della fattura."
       );
     } finally {
       setAzioneFattura(null);
@@ -631,32 +639,23 @@ export default function AdminPage() {
     try {
       const { error } = await supabase.rpc(
         "ripristina_fattura",
-        {
-          fattura_id: fattura.id,
-        }
+        { fattura_id: fattura.id }
       );
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      setSuccesso(
-        "Fattura ripristinata correttamente."
-      );
+      setSuccesso("Fattura ripristinata correttamente.");
 
       await Promise.all([
         caricaFatture(),
         caricaDipendenti(),
+        caricaFondoCassa(),
       ]);
     } catch (error) {
-      console.error(
-        "Errore ripristino fattura:",
-        error
-      );
-
+      console.error("Errore ripristino fattura:", error);
       setErrore(
         error?.message ||
-          "Errore durante il ripristino della fattura."
+        "Errore durante il ripristino della fattura."
       );
     } finally {
       setAzioneFattura(null);
@@ -664,90 +663,77 @@ export default function AdminPage() {
   }
 
   // =========================================================
-  // PAGAMENTO STIPENDIO
+  // PAGAMENTO STIPENDIO SETTIMANALE / ARRETRATO
   // =========================================================
 
-  async function pagaStipendio(dipendente) {
-    const nomeCompleto =
-      `${dipendente.nome || ""} ${
-        dipendente.cognome || ""
-      }`.trim();
-
-    if (
-      Number(dipendente.stipendio || 0) <= 0
-    ) {
-      setErrore(
-        "Questo dipendente non ha uno stipendio maturato da pagare."
-      );
+  async function pagaCicloStipendio(ciclo) {
+    if (ciclo.stato === "pagato") {
+      setErrore("Questo stipendio risulta già pagato.");
       return;
     }
+
+    const importo = Number(ciclo.stipendio_maturato || 0);
+
+    if (importo <= 0) {
+      setErrore("Importo dello stipendio non valido.");
+      return;
+    }
+
+    const nomeCompleto =
+      `${ciclo.employee_nome || ""} ${
+        ciclo.employee_cognome || ""
+      }`.trim() ||
+      ciclo.employee_username ||
+      "Dipendente";
 
     const conferma = window.confirm(
-      `Confermi il pagamento dello stipendio a ${nomeCompleto}?\n\n` +
-        `Fatturato del periodo: ${formattaSoldi(
-          dipendente.fatturato
-        )}\n` +
-        `Percentuale: ${
-          dipendente.percentuale_stipendio
-        }%\n` +
-        `Stipendio da pagare: ${formattaSoldi(
-          dipendente.stipendio
-        )}\n\n` +
-        `Dopo il pagamento il conteggio del dipendente ripartirà da $0.`
+      `CONFERMA PAGAMENTO STIPENDIO\n\n` +
+      `Dipendente: ${nomeCompleto}\n` +
+      `Periodo: ${formattaSoloData(ciclo.periodo_da)} - ` +
+      `${formattaSoloData(
+        new Date(
+          new Date(ciclo.periodo_a).getTime() - 1000
+        ).toISOString()
+      )}\n` +
+      `Fatturato: ${formattaSoldi(ciclo.fatturato_periodo)}\n` +
+      `Percentuale: ${ciclo.percentuale_stipendio}%\n` +
+      `Stipendio: ${formattaSoldi(importo)}\n\n` +
+      `L'importo sarà sottratto dal Fondo Cassa.\n` +
+      `Vuoi procedere?`
     );
 
-    if (!conferma) {
-      return;
-    }
+    if (!conferma) return;
 
     setErrore("");
     setSuccesso("");
-    setPagamentoStipendio(dipendente.id);
+    setPagamentoStipendio(ciclo.id);
 
     try {
       const { error } = await supabase.rpc(
-        "paga_stipendio",
-        {
-          dipendente_id: dipendente.id,
-        }
+        "paga_ciclo_stipendio",
+        { p_ciclo_id: ciclo.id }
       );
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+
+      await Promise.all([
+        caricaCicliStipendi(),
+        caricaFondoCassa(),
+      ]);
 
       setSuccesso(
-        `Stipendio di ${formattaSoldi(
-          dipendente.stipendio
-        )} pagato a ${nomeCompleto}. Il nuovo ciclo è ripartito da $0.`
+        `Stipendio di ${formattaSoldi(importo)} ` +
+        `pagato a ${nomeCompleto}. Fondo Cassa aggiornato.`
       );
-
-      await caricaDipendenti();
     } catch (error) {
-      console.error(
-        "Errore pagamento stipendio:",
-        error
-      );
-
+      console.error("Errore pagamento stipendio:", error);
       setErrore(
         error?.message ||
-          "Errore durante il pagamento dello stipendio."
+        "Errore durante il pagamento dello stipendio."
       );
     } finally {
       setPagamentoStipendio(null);
     }
-  }
-
-  function oggiESabato() {
-    const giorno = new Intl.DateTimeFormat(
-      "en-US",
-      {
-        weekday: "short",
-        timeZone: "Europe/Rome",
-      }
-    ).format(new Date());
-
-    return giorno === "Sat";
   }
 
   // =========================================================
@@ -761,9 +747,7 @@ export default function AdminPage() {
   }
 
   function formattaData(data) {
-    if (!data) {
-      return "";
-    }
+    if (!data) return "";
 
     return new Intl.DateTimeFormat("it-IT", {
       day: "2-digit",
@@ -771,6 +755,18 @@ export default function AdminPage() {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Europe/Rome",
+    }).format(new Date(data));
+  }
+
+  function formattaSoloData(data) {
+    if (!data) return "";
+
+    return new Intl.DateTimeFormat("it-IT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "Europe/Rome",
     }).format(new Date(data));
   }
 
@@ -815,20 +811,31 @@ export default function AdminPage() {
     (fattura) => !fattura.annullata
   );
 
-  const fatturatoTotale =
-    fattureValide.reduce(
-      (totale, fattura) =>
-        totale + Number(fattura.totale || 0),
-      0
-    );
+  const fatturatoTotale = fattureValide.reduce(
+    (totale, fattura) =>
+      totale + Number(fattura.totale || 0),
+    0
+  );
 
-  const stipendiTotali =
-    dipendenti.reduce(
-      (totale, dipendente) =>
-        totale +
-        Number(dipendente.stipendio || 0),
-      0
-    );
+  const stipendiSettimana = dipendenti.reduce(
+    (totale, dipendente) =>
+      totale + Number(dipendente.stipendio || 0),
+    0
+  );
+
+  const cicliDaPagare = cicliStipendi.filter(
+    (ciclo) => ciclo.stato === "da_pagare"
+  );
+
+  const cicliPagati = cicliStipendi.filter(
+    (ciclo) => ciclo.stato === "pagato"
+  );
+
+  const totaleArretrati = cicliDaPagare.reduce(
+    (totale, ciclo) =>
+      totale + Number(ciclo.stipendio_maturato || 0),
+    0
+  );
 
   const importValidi = imports.filter(
     (ordine) => !ordine.annullato
@@ -858,12 +865,9 @@ export default function AdminPage() {
         >
           <div
             className="container"
-            style={{
-              maxWidth: "1200px",
-            }}
+            style={{ maxWidth: "1200px" }}
           >
             <h2>ARMERIA 200</h2>
-
             <p
               style={{
                 color: "#777",
@@ -879,7 +883,7 @@ export default function AdminPage() {
   }
 
   // =========================================================
-  // PAGINA
+  // INIZIO PAGINA ADMIN
   // =========================================================
 
   return (
@@ -895,9 +899,7 @@ export default function AdminPage() {
       >
         <div
           className="container"
-          style={{
-            maxWidth: "1200px",
-          }}
+          style={{ maxWidth: "1200px" }}
         >
           {/* HEADER */}
 
@@ -914,9 +916,7 @@ export default function AdminPage() {
               ARMERIA 200
             </div>
 
-            <h1 className="title">
-              PANNELLO ADMIN
-            </h1>
+            <h1 className="title">PANNELLO ADMIN</h1>
 
             <p className="subtitle">
               Gestione completa dell&apos;Armeria
@@ -961,9 +961,7 @@ export default function AdminPage() {
 
             <StatCard
               titolo="Fatturato totale"
-              valore={formattaSoldi(
-                fatturatoTotale
-              )}
+              valore={formattaSoldi(fatturatoTotale)}
             />
 
             <StatCard
@@ -972,10 +970,13 @@ export default function AdminPage() {
             />
 
             <StatCard
-              titolo="Stipendi maturati"
-              valore={formattaSoldi(
-                stipendiTotali
-              )}
+              titolo="Stipendi settimana corrente"
+              valore={formattaSoldi(stipendiSettimana)}
+            />
+
+            <StatCard
+              titolo="Stipendi da pagare"
+              valore={formattaSoldi(totaleArretrati)}
             />
 
             <StatCard
@@ -1000,8 +1001,7 @@ export default function AdminPage() {
             className="card"
             style={{
               marginBottom: "35px",
-              border:
-                "1px solid rgba(139,30,30,.45)",
+              border: "1px solid rgba(139,30,30,.45)",
             }}
           >
             <div
@@ -1026,8 +1026,8 @@ export default function AdminPage() {
                 marginBottom: "22px",
               }}
             >
-              Importo attualmente disponibile
-              nella cassa dell&apos;Armeria.
+              Importo attualmente disponibile nella
+              cassa dell&apos;Armeria.
             </p>
 
             <div
@@ -1057,9 +1057,7 @@ export default function AdminPage() {
                     flex: "1",
                   }}
                 >
-                  <label>
-                    Nuovo fondo cassa ($)
-                  </label>
+                  <label>Nuovo fondo cassa ($)</label>
 
                   <input
                     type="number"
@@ -1067,9 +1065,7 @@ export default function AdminPage() {
                     step="0.01"
                     value={nuovoFondoCassa}
                     onChange={(event) =>
-                      setNuovoFondoCassa(
-                        event.target.value
-                      )
+                      setNuovoFondoCassa(event.target.value)
                     }
                     required
                   />
@@ -1088,14 +1084,327 @@ export default function AdminPage() {
             </form>
           </div>
 
-          {/* IMPORT */}
+
+          {/* GESTIONE STIPENDI */}
+
+          <div
+            className="card"
+            style={{
+              marginBottom: "35px",
+              border: "1px solid rgba(139,30,30,.45)",
+            }}
+          >
+            <div
+              style={{
+                color: "#c42a2a",
+                fontSize: "11px",
+                fontWeight: "900",
+                letterSpacing: "3px",
+                marginBottom: "8px",
+              }}
+            >
+              CONTABILITÀ PERSONALE
+            </div>
+
+            <h2>Gestione Stipendi</h2>
+
+            <p
+              style={{
+                color: "#999",
+                fontSize: "13px",
+                lineHeight: "1.7",
+                marginTop: "10px",
+                marginBottom: "22px",
+              }}
+            >
+              Gli stipendi vengono calcolati per settimane,
+              dalla domenica al sabato. Ogni domenica il
+              fatturato corrente riparte da zero.
+              Gli stipendi non pagati rimangono disponibili
+              come arretrati e possono essere saldati
+              successivamente.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "15px",
+                marginBottom: "25px",
+              }}
+            >
+              <StatCard
+                titolo="Stipendi da pagare"
+                valore={formattaSoldi(totaleArretrati)}
+              />
+
+              <StatCard
+                titolo="Pagamenti in sospeso"
+                valore={cicliDaPagare.length}
+              />
+
+              <StatCard
+                titolo="Stipendi già pagati"
+                valore={cicliPagati.length}
+              />
+            </div>
+
+            <h3
+              style={{
+                marginBottom: "15px",
+                color: "#fff",
+              }}
+            >
+              Stipendi da pagare
+            </h3>
+
+            {cicliDaPagare.length === 0 ? (
+              <div
+                style={{
+                  padding: "20px",
+                  border: "1px solid rgba(139,30,30,.3)",
+                  borderRadius: "8px",
+                  color: "#999",
+                  marginBottom: "25px",
+                }}
+              >
+                Nessuno stipendio arretrato da pagare.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: "15px",
+                  marginBottom: "30px",
+                }}
+              >
+                {cicliDaPagare.map((ciclo) => {
+                  const nome =
+                    `${ciclo.employee_nome || ""} ${
+                      ciclo.employee_cognome || ""
+                    }`.trim() ||
+                    ciclo.employee_username ||
+                    "Dipendente";
+
+                  return (
+                    <div
+                      key={ciclo.id}
+                      style={{
+                        background: "#111",
+                        border:
+                          "1px solid rgba(196,42,42,.5)",
+                        borderRadius: "10px",
+                        padding: "18px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: "10px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <strong
+                          style={{
+                            color: "#fff",
+                            fontSize: "16px",
+                          }}
+                        >
+                          {nome}
+                        </strong>
+
+                        <span
+                          style={{
+                            color: "#ff7777",
+                            fontSize: "10px",
+                            fontWeight: "900",
+                            letterSpacing: "1px",
+                          }}
+                        >
+                          DA PAGARE
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          color: "#aaa",
+                          fontSize: "12px",
+                          lineHeight: "1.9",
+                        }}
+                      >
+                        <div>
+                          Settimana:{" "}
+                          {formattaSoloData(ciclo.periodo_da)}
+                          {" - "}
+                          {formattaSoloData(
+                            new Date(
+                              new Date(ciclo.periodo_a).getTime() -
+                                1000
+                            ).toISOString()
+                          )}
+                        </div>
+
+                        <div>
+                          Grado: {ciclo.employee_grado || "—"}
+                        </div>
+
+                        <div>
+                          Fatture: {ciclo.numero_fatture}
+                        </div>
+
+                        <div>
+                          Fatturato:{" "}
+                          {formattaSoldi(
+                            ciclo.fatturato_periodo
+                          )}
+                        </div>
+
+                        <div>
+                          Percentuale:{" "}
+                          {ciclo.percentuale_stipendio}%
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          color: "#fff",
+                          fontSize: "24px",
+                          fontWeight: "900",
+                          marginTop: "14px",
+                          marginBottom: "14px",
+                        }}
+                      >
+                        {formattaSoldi(
+                          ciclo.stipendio_maturato
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ width: "100%" }}
+                        disabled={
+                          pagamentoStipendio !== null ||
+                          Number(ciclo.stipendio_maturato) <= 0
+                        }
+                        onClick={() =>
+                          pagaCicloStipendio(ciclo)
+                        }
+                      >
+                        {pagamentoStipendio === ciclo.id
+                          ? "Pagamento in corso..."
+                          : "PAGA STIPENDIO"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <h3
+              style={{
+                color: "#fff",
+                marginBottom: "15px",
+              }}
+            >
+              Stipendi pagati
+            </h3>
+
+            {cicliPagati.length === 0 ? (
+              <p
+                style={{
+                  color: "#777",
+                  fontSize: "13px",
+                }}
+              >
+                Nessun pagamento ancora registrato.
+              </p>
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                }}
+              >
+                {cicliPagati.map((ciclo) => (
+                  <div
+                    key={ciclo.id}
+                    style={{
+                      padding: "15px",
+                      background: "#111",
+                      border:
+                        "1px solid rgba(255,255,255,.08)",
+                      borderRadius: "8px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "15px",
+                    }}
+                  >
+                    <div>
+                      <strong style={{ color: "#fff" }}>
+                        {ciclo.employee_nome}{" "}
+                        {ciclo.employee_cognome}
+                      </strong>
+
+                      <div
+                        style={{
+                          color: "#888",
+                          fontSize: "12px",
+                          marginTop: "5px",
+                        }}
+                      >
+                        Settimana del{" "}
+                        {formattaSoloData(ciclo.periodo_da)}
+                        {" • "}
+                        Pagato il{" "}
+                        {formattaData(ciclo.pagato_il)}
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                      <strong
+                        style={{
+                          color: "#fff",
+                          fontSize: "18px",
+                        }}
+                      >
+                        {formattaSoldi(
+                          ciclo.stipendio_maturato
+                        )}
+                      </strong>
+
+                      <div
+                        style={{
+                          color: "#8ccf9b",
+                          fontSize: "11px",
+                          fontWeight: "900",
+                          marginTop: "4px",
+                        }}
+                      >
+                        PAGATO
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* GESTIONE IMPORT */}
 
           <div
             className="card"
             style={{
               marginBottom: "20px",
-              border:
-                "1px solid rgba(139,30,30,.35)",
+              border: "1px solid rgba(139,30,30,.35)",
             }}
           >
             <div
@@ -1129,13 +1438,13 @@ export default function AdminPage() {
                     marginTop: "7px",
                   }}
                 >
-                  Visualizza, controlla e gestisci
-                  gli ordini dei materiali
-                  dell&apos;Armeria.
+                  Visualizza, controlla e gestisci gli
+                  ordini dei materiali dell&apos;Armeria.
                 </p>
               </div>
 
               <button
+                type="button"
                 className="btn btn-primary"
                 onClick={() =>
                   router.push("/storico-import")
@@ -1152,8 +1461,7 @@ export default function AdminPage() {
             className="card"
             style={{
               marginBottom: "35px",
-              border:
-                "1px solid rgba(139,30,30,.35)",
+              border: "1px solid rgba(139,30,30,.35)",
             }}
           >
             <div
@@ -1188,12 +1496,12 @@ export default function AdminPage() {
                   }}
                 >
                   Aggiungi prodotti, modifica prezzi
-                  e gestisci gli articoli
-                  disponibili.
+                  e gestisci gli articoli disponibili.
                 </p>
               </div>
 
               <button
+                type="button"
                 className="btn btn-primary"
                 onClick={() =>
                   router.push("/admin/catalogo")
@@ -1239,10 +1547,7 @@ export default function AdminPage() {
                   label="Nome"
                   value={nuovoDipendente.nome}
                   onChange={(value) =>
-                    modificaNuovoDipendente(
-                      "nome",
-                      value
-                    )
+                    modificaNuovoDipendente("nome", value)
                   }
                 />
 
@@ -1250,10 +1555,7 @@ export default function AdminPage() {
                   label="Cognome"
                   value={nuovoDipendente.cognome}
                   onChange={(value) =>
-                    modificaNuovoDipendente(
-                      "cognome",
-                      value
-                    )
+                    modificaNuovoDipendente("cognome", value)
                   }
                 />
 
@@ -1261,10 +1563,7 @@ export default function AdminPage() {
                   label="Username"
                   value={nuovoDipendente.username}
                   onChange={(value) =>
-                    modificaNuovoDipendente(
-                      "username",
-                      value
-                    )
+                    modificaNuovoDipendente("username", value)
                   }
                 />
 
@@ -1274,10 +1573,7 @@ export default function AdminPage() {
                   minLength={6}
                   value={nuovoDipendente.password}
                   onChange={(value) =>
-                    modificaNuovoDipendente(
-                      "password",
-                      value
-                    )
+                    modificaNuovoDipendente("password", value)
                   }
                 />
 
@@ -1345,9 +1641,7 @@ export default function AdminPage() {
                   className="card"
                   key={dipendente.id}
                   style={{
-                    opacity: dipendente.attivo
-                      ? 1
-                      : 0.55,
+                    opacity: dipendente.attivo ? 1 : 0.55,
                   }}
                 >
                   <div
@@ -1400,62 +1694,47 @@ export default function AdminPage() {
                     style={{
                       color: "#aaa",
                       fontSize: "13px",
-                      lineHeight: "1.8",
+                      lineHeight: "1.9",
                       marginBottom: "15px",
                     }}
                   >
                     <div>
                       Grado:{" "}
-                      <strong
-                        style={{ color: "#fff" }}
-                      >
+                      <strong style={{ color: "#fff" }}>
                         {dipendente.grado}
                       </strong>
                     </div>
 
                     <div>
                       Percentuale:{" "}
-                      <strong
-                        style={{ color: "#fff" }}
-                      >
-                        {
-                          dipendente.percentuale_stipendio
-                        }
-                        %
+                      <strong style={{ color: "#fff" }}>
+                        {dipendente.percentuale_stipendio}%
                       </strong>
                     </div>
 
                     <div>
-                      Fatture ciclo corrente:{" "}
-                      <strong
-                        style={{ color: "#fff" }}
-                      >
+                      Fatture settimana corrente:{" "}
+                      <strong style={{ color: "#fff" }}>
                         {dipendente.numero_fatture}
                       </strong>
                     </div>
 
                     <div>
-                      Fatturato da pagare:{" "}
-                      <strong
-                        style={{ color: "#fff" }}
-                      >
-                        {formattaSoldi(
-                          dipendente.fatturato
-                        )}
+                      Fatturato settimana corrente:{" "}
+                      <strong style={{ color: "#fff" }}>
+                        {formattaSoldi(dipendente.fatturato)}
                       </strong>
                     </div>
 
                     <div>
-                      Stipendio da pagare:{" "}
+                      Stipendio in maturazione:{" "}
                       <strong
                         style={{
                           color: "#fff",
                           fontSize: "16px",
                         }}
                       >
-                        {formattaSoldi(
-                          dipendente.stipendio
-                        )}
+                        {formattaSoldi(dipendente.stipendio)}
                       </strong>
                     </div>
                   </div>
@@ -1468,12 +1747,8 @@ export default function AdminPage() {
                         <select
                           value={dipendente.grado}
                           disabled={
-                            salvataggio ===
-                              dipendente.id ||
-                            eliminazione ===
-                              dipendente.id ||
-                            pagamentoStipendio ===
-                              dipendente.id
+                            salvataggio === dipendente.id ||
+                            eliminazione === dipendente.id
                           }
                           onChange={(event) =>
                             cambiaGrado(
@@ -1482,122 +1757,17 @@ export default function AdminPage() {
                             )
                           }
                         >
-                          {Object.entries(
-                            GRADI
-                          ).map(
-                            ([
-                              grado,
-                              percentuale,
-                            ]) => (
+                          {Object.entries(GRADI).map(
+                            ([grado, percentuale]) => (
                               <option
                                 key={grado}
                                 value={grado}
                               >
-                                {grado} —{" "}
-                                {percentuale}%
+                                {grado} — {percentuale}%
                               </option>
                             )
                           )}
                         </select>
-                      </div>
-
-                      {/* PAGAMENTO STIPENDIO */}
-
-                      <div
-                        style={{
-                          padding: "15px",
-                          marginBottom: "15px",
-                          border:
-                            "1px solid rgba(139,30,30,.35)",
-                          borderRadius: "8px",
-                          background:
-                            "rgba(139,30,30,.06)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: "#c42a2a",
-                            fontSize: "10px",
-                            fontWeight: "900",
-                            letterSpacing: "2px",
-                            marginBottom: "7px",
-                          }}
-                        >
-                          PAGAMENTO SETTIMANALE
-                        </div>
-
-                        <div
-                          style={{
-                            color: "#aaa",
-                            fontSize: "12px",
-                            marginBottom: "12px",
-                            lineHeight: "1.6",
-                          }}
-                        >
-                          Pagamento disponibile ogni
-                          sabato.
-                          <br />
-                          Dopo il pagamento il
-                          fatturato e lo stipendio del
-                          nuovo ciclo ripartono da $0.
-                        </div>
-
-                        <button
-                          className="btn btn-primary"
-                          disabled={
-                            !oggiESabato() ||
-                            !dipendente.attivo ||
-                            Number(
-                              dipendente.stipendio || 0
-                            ) <= 0 ||
-                            pagamentoStipendio ===
-                              dipendente.id ||
-                            salvataggio ===
-                              dipendente.id ||
-                            eliminazione ===
-                              dipendente.id
-                          }
-                          onClick={() =>
-                            pagaStipendio(
-                              dipendente
-                            )
-                          }
-                          title={
-                            !oggiESabato()
-                              ? "Gli stipendi possono essere pagati solo il sabato"
-                              : Number(
-                                  dipendente.stipendio ||
-                                    0
-                                ) <= 0
-                              ? "Nessuno stipendio maturato"
-                              : "Registra lo stipendio come pagato"
-                          }
-                          style={{
-                            width: "100%",
-                            marginBottom: "5px",
-                          }}
-                        >
-                          {pagamentoStipendio ===
-                          dipendente.id
-                            ? "Pagamento..."
-                            : `Stipendio Pagato — ${formattaSoldi(
-                                dipendente.stipendio
-                              )}`}
-                        </button>
-
-                        {!oggiESabato() && (
-                          <div
-                            style={{
-                              color: "#777",
-                              fontSize: "10px",
-                              marginTop: "6px",
-                              textAlign: "center",
-                            }}
-                          >
-                            Pulsante disponibile il
-                            sabato
-                          </div>
-                        )}
                       </div>
 
                       <div
@@ -1608,19 +1778,14 @@ export default function AdminPage() {
                         }}
                       >
                         <button
+                          type="button"
                           className="btn btn-dark"
                           disabled={
-                            salvataggio ===
-                              dipendente.id ||
-                            eliminazione ===
-                              dipendente.id ||
-                            pagamentoStipendio ===
-                              dipendente.id
+                            salvataggio === dipendente.id ||
+                            eliminazione === dipendente.id
                           }
                           onClick={() =>
-                            cambiaStatoDipendente(
-                              dipendente
-                            )
+                            cambiaStatoDipendente(dipendente)
                           }
                         >
                           {dipendente.attivo
@@ -1629,27 +1794,21 @@ export default function AdminPage() {
                         </button>
 
                         <button
+                          type="button"
                           className="btn btn-primary"
                           disabled={
-                            eliminazione ===
-                              dipendente.id ||
-                            salvataggio ===
-                              dipendente.id ||
-                            pagamentoStipendio ===
-                              dipendente.id
+                            eliminazione === dipendente.id ||
+                            salvataggio === dipendente.id
                           }
                           onClick={() =>
-                            eliminaDipendente(
-                              dipendente
-                            )
+                            eliminaDipendente(dipendente)
                           }
                           style={{
                             background: "#7a1010",
                             borderColor: "#a51d1d",
                           }}
                         >
-                          {eliminazione ===
-                          dipendente.id
+                          {eliminazione === dipendente.id
                             ? "Eliminazione..."
                             : "Elimina definitivamente"}
                         </button>
@@ -1700,8 +1859,7 @@ export default function AdminPage() {
                 }}
               >
                 {fatture.map((fattura) => {
-                  const dati =
-                    datiStoriciFattura(fattura);
+                  const dati = datiStoriciFattura(fattura);
 
                   return (
                     <div
@@ -1755,27 +1913,18 @@ export default function AdminPage() {
                             {dati.grado}
 
                             {dati.eliminato && (
-                              <>
-                                {" • "}
-
-                                <span
-                                  style={{
-                                    color:
-                                      "#c42a2a",
-                                    fontWeight:
-                                      "900",
-                                  }}
-                                >
-                                  ACCOUNT ELIMINATO
-                                </span>
-                              </>
+                              <span
+                                style={{
+                                  color: "#c42a2a",
+                                  fontWeight: "900",
+                                }}
+                              >
+                                {" • "}ACCOUNT ELIMINATO
+                              </span>
                             )}
 
                             {" • "}
-
-                            {formattaData(
-                              fattura.created_at
-                            )}
+                            {formattaData(fattura.created_at)}
                           </div>
 
                           {fattura.annullata && (
@@ -1806,44 +1955,36 @@ export default function AdminPage() {
                               fontWeight: "900",
                             }}
                           >
-                            {formattaSoldi(
-                              fattura.totale
-                            )}
+                            {formattaSoldi(fattura.totale)}
                           </div>
 
                           {fattura.annullata ? (
                             <button
+                              type="button"
                               className="btn btn-dark"
                               disabled={
-                                azioneFattura ===
-                                fattura.id
+                                azioneFattura === fattura.id
                               }
                               onClick={() =>
-                                ripristinaFattura(
-                                  fattura
-                                )
+                                ripristinaFattura(fattura)
                               }
                             >
-                              {azioneFattura ===
-                              fattura.id
+                              {azioneFattura === fattura.id
                                 ? "Attendi..."
                                 : "Ripristina"}
                             </button>
                           ) : (
                             <button
+                              type="button"
                               className="btn btn-dark"
                               disabled={
-                                azioneFattura ===
-                                fattura.id
+                                azioneFattura === fattura.id
                               }
                               onClick={() =>
-                                annullaFattura(
-                                  fattura
-                                )
+                                annullaFattura(fattura)
                               }
                             >
-                              {azioneFattura ===
-                              fattura.id
+                              {azioneFattura === fattura.id
                                 ? "Attendi..."
                                 : "Annulla"}
                             </button>
@@ -1920,4 +2061,3 @@ function StatCard({ titolo, valore }) {
     </div>
   );
 }
-
