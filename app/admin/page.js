@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [salvataggio, setSalvataggio] = useState(null);
   const [eliminazione, setEliminazione] = useState(null);
   const [azioneFattura, setAzioneFattura] = useState(null);
+
   const [pagamentoStipendio, setPagamentoStipendio] =
     useState(null);
 
@@ -191,10 +192,7 @@ export default function AdminPage() {
       )
       .order("periodo_da", { ascending: false });
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     setCicliStipendi(data || []);
   }
 
@@ -417,13 +415,10 @@ export default function AdminPage() {
   }
 
   // =========================================================
-  // CAMBIA GRADO
+  // CAMBIA GRADO DIPENDENTE
   // =========================================================
 
-  async function cambiaGrado(
-    dipendente,
-    nuovoGrado
-  ) {
+  async function cambiaGrado(dipendente, nuovoGrado) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
@@ -436,9 +431,7 @@ export default function AdminPage() {
         })
         .eq("id", dipendente.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setSuccesso(
         `${dipendente.nome} ${dipendente.cognome} ora è ${nuovoGrado} (${GRADI[nuovoGrado]}%).`
@@ -446,10 +439,7 @@ export default function AdminPage() {
 
       await caricaDipendenti();
     } catch (error) {
-      console.error(
-        "Errore modifica grado:",
-        error
-      );
+      console.error("Errore modifica grado:", error);
 
       setErrore(
         error?.message ||
@@ -464,9 +454,7 @@ export default function AdminPage() {
   // ATTIVA / DISATTIVA DIPENDENTE
   // =========================================================
 
-  async function cambiaStatoDipendente(
-    dipendente
-  ) {
+  async function cambiaStatoDipendente(dipendente) {
     setErrore("");
     setSuccesso("");
     setSalvataggio(dipendente.id);
@@ -481,9 +469,7 @@ export default function AdminPage() {
         })
         .eq("id", dipendente.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setSuccesso(
         nuovoStato
@@ -493,10 +479,7 @@ export default function AdminPage() {
 
       await caricaDipendenti();
     } catch (error) {
-      console.error(
-        "Errore modifica stato:",
-        error
-      );
+      console.error("Errore modifica stato:", error);
 
       setErrore(
         error?.message ||
@@ -506,7 +489,6 @@ export default function AdminPage() {
       setSalvataggio(null);
     }
   }
-
 
   // =========================================================
   // ELIMINA DIPENDENTE
@@ -519,10 +501,13 @@ export default function AdminPage() {
       }`.trim();
 
     const conferma = window.confirm(
-      `ATTENZIONE!\n\nVuoi eliminare definitivamente ${nomeCompleto} (@${dipendente.username})?\n\n` +
-      `L'account non potrà più accedere al gestionale.\n\n` +
-      `Le vecchie fatture, gli import e gli stipendi registrati resteranno nello storico.\n\n` +
-      `Questa operazione non può essere annullata.`
+      `ATTENZIONE!\n\n` +
+        `Vuoi eliminare definitivamente ${nomeCompleto} ` +
+        `(@${dipendente.username})?\n\n` +
+        `L'account non potrà più accedere al gestionale.\n\n` +
+        `Le vecchie fatture, gli import e gli stipendi ` +
+        `registrati resteranno nello storico.\n\n` +
+        `Questa operazione non può essere annullata.`
     );
 
     if (!conferma) return;
@@ -567,7 +552,7 @@ export default function AdminPage() {
       if (!response.ok) {
         throw new Error(
           risultato?.error ||
-          `Errore eliminazione dipendente (${response.status}).`
+            `Errore eliminazione dipendente (${response.status}).`
         );
       }
 
@@ -583,9 +568,10 @@ export default function AdminPage() {
       ]);
     } catch (error) {
       console.error("Errore eliminazione dipendente:", error);
+
       setErrore(
         error?.message ||
-        "Errore durante l'eliminazione del dipendente."
+          "Errore durante l'eliminazione del dipendente."
       );
     } finally {
       setEliminazione(null);
@@ -618,9 +604,10 @@ export default function AdminPage() {
       ]);
     } catch (error) {
       console.error("Errore annullamento fattura:", error);
+
       setErrore(
         error?.message ||
-        "Errore durante l'annullamento della fattura."
+          "Errore durante l'annullamento della fattura."
       );
     } finally {
       setAzioneFattura(null);
@@ -653,9 +640,10 @@ export default function AdminPage() {
       ]);
     } catch (error) {
       console.error("Errore ripristino fattura:", error);
+
       setErrore(
         error?.message ||
-        "Errore durante il ripristino della fattura."
+          "Errore durante il ripristino della fattura."
       );
     } finally {
       setAzioneFattura(null);
@@ -663,7 +651,7 @@ export default function AdminPage() {
   }
 
   // =========================================================
-  // PAGAMENTO STIPENDIO SETTIMANALE / ARRETRATO
+  // PAGA STIPENDIO SETTIMANALE O ARRETRATO
   // =========================================================
 
   async function pagaCicloStipendio(ciclo) {
@@ -686,20 +674,20 @@ export default function AdminPage() {
       ciclo.employee_username ||
       "Dipendente";
 
+    const fineSettimana = new Date(
+      new Date(ciclo.periodo_a).getTime() - 1000
+    ).toISOString();
+
     const conferma = window.confirm(
       `CONFERMA PAGAMENTO STIPENDIO\n\n` +
-      `Dipendente: ${nomeCompleto}\n` +
-      `Periodo: ${formattaSoloData(ciclo.periodo_da)} - ` +
-      `${formattaSoloData(
-        new Date(
-          new Date(ciclo.periodo_a).getTime() - 1000
-        ).toISOString()
-      )}\n` +
-      `Fatturato: ${formattaSoldi(ciclo.fatturato_periodo)}\n` +
-      `Percentuale: ${ciclo.percentuale_stipendio}%\n` +
-      `Stipendio: ${formattaSoldi(importo)}\n\n` +
-      `L'importo sarà sottratto dal Fondo Cassa.\n` +
-      `Vuoi procedere?`
+        `Dipendente: ${nomeCompleto}\n` +
+        `Periodo: ${formattaSoloData(ciclo.periodo_da)} - ` +
+        `${formattaSoloData(fineSettimana)}\n` +
+        `Fatturato: ${formattaSoldi(ciclo.fatturato_periodo)}\n` +
+        `Percentuale: ${ciclo.percentuale_stipendio}%\n` +
+        `Stipendio: ${formattaSoldi(importo)}\n\n` +
+        `L'importo sarà sottratto dal Fondo Cassa.\n` +
+        `Vuoi procedere?`
     );
 
     if (!conferma) return;
@@ -723,13 +711,83 @@ export default function AdminPage() {
 
       setSuccesso(
         `Stipendio di ${formattaSoldi(importo)} ` +
-        `pagato a ${nomeCompleto}. Fondo Cassa aggiornato.`
+          `pagato a ${nomeCompleto}. ` +
+          `Fondo Cassa aggiornato.`
       );
     } catch (error) {
       console.error("Errore pagamento stipendio:", error);
+
       setErrore(
         error?.message ||
-        "Errore durante il pagamento dello stipendio."
+          "Errore durante il pagamento dello stipendio."
+      );
+    } finally {
+      setPagamentoStipendio(null);
+    }
+  }
+
+  // =========================================================
+  // ANNULLA PAGAMENTO STIPENDIO
+  // =========================================================
+
+  async function annullaPagamentoStipendio(ciclo) {
+    if (ciclo.stato !== "pagato") {
+      setErrore("Questo stipendio non risulta pagato.");
+      return;
+    }
+
+    const nomeCompleto =
+      `${ciclo.employee_nome || ""} ${
+        ciclo.employee_cognome || ""
+      }`.trim() ||
+      ciclo.employee_username ||
+      "Dipendente";
+
+    const importo = Number(ciclo.stipendio_maturato || 0);
+
+    const conferma = window.confirm(
+      `ANNULLARE IL PAGAMENTO?\n\n` +
+        `Dipendente: ${nomeCompleto}\n` +
+        `Importo: ${formattaSoldi(importo)}\n` +
+        `Periodo: ${formattaSoloData(ciclo.periodo_da)}\n\n` +
+        `Lo stipendio tornerà DA PAGARE.\n` +
+        `L'importo verrà restituito al Fondo Cassa.\n\n` +
+        `Vuoi continuare?`
+    );
+
+    if (!conferma) return;
+
+    setErrore("");
+    setSuccesso("");
+    setPagamentoStipendio(ciclo.id);
+
+    try {
+      const { error } = await supabase.rpc(
+        "annulla_pagamento_ciclo",
+        { p_ciclo_id: ciclo.id }
+      );
+
+      if (error) throw error;
+
+      await Promise.all([
+        caricaCicliStipendi(),
+        caricaFondoCassa(),
+      ]);
+
+      setSuccesso(
+        `Pagamento di ${nomeCompleto} annullato. ` +
+          `${formattaSoldi(importo)} restituiti ` +
+          `al Fondo Cassa.`
+      );
+    } catch (error) {
+      console.error(
+        "Errore annullamento pagamento:",
+        error
+      );
+
+      setErrore(
+        error?.message ||
+          "Impossibile annullare il pagamento."
       );
     } finally {
       setPagamentoStipendio(null);
@@ -771,9 +829,11 @@ export default function AdminPage() {
   }
 
   function datiStoriciFattura(fattura) {
+    const profilo = fattura.profiles;
+
     const nomeProfilo =
-      `${fattura.profiles?.nome || ""} ${
-        fattura.profiles?.cognome || ""
+      `${profilo?.nome || ""} ${
+        profilo?.cognome || ""
       }`.trim();
 
     const nomeStorico =
@@ -785,26 +845,26 @@ export default function AdminPage() {
       nome:
         nomeProfilo ||
         nomeStorico ||
-        fattura.profiles?.username ||
+        profilo?.username ||
         fattura.employee_username ||
         "Dipendente eliminato",
 
       username:
-        fattura.profiles?.username ||
+        profilo?.username ||
         fattura.employee_username ||
         "",
 
       grado:
-        fattura.profiles?.grado ||
+        profilo?.grado ||
         fattura.employee_grado ||
         "Grado non disponibile",
 
-      eliminato: !fattura.employee_id,
+      eliminato: !profilo,
     };
   }
 
   // =========================================================
-  // TOTALI
+  // CALCOLI GENERALI
   // =========================================================
 
   const fattureValide = fatture.filter(
@@ -837,6 +897,12 @@ export default function AdminPage() {
     0
   );
 
+  const totaleStipendiPagati = cicliPagati.reduce(
+    (totale, ciclo) =>
+      totale + Number(ciclo.stipendio_maturato || 0),
+    0
+  );
+
   const importValidi = imports.filter(
     (ordine) => !ordine.annullato
   );
@@ -848,7 +914,7 @@ export default function AdminPage() {
   );
 
   // =========================================================
-  // LOADING
+  // CARICAMENTO PAGINA
   // =========================================================
 
   if (loading) {
@@ -868,6 +934,7 @@ export default function AdminPage() {
             style={{ maxWidth: "1200px" }}
           >
             <h2>ARMERIA 200</h2>
+
             <p
               style={{
                 color: "#777",
@@ -943,7 +1010,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* STATISTICHE */}
+          {/* STATISTICHE GENERALI */}
 
           <div
             style={{
@@ -977,6 +1044,11 @@ export default function AdminPage() {
             <StatCard
               titolo="Stipendi da pagare"
               valore={formattaSoldi(totaleArretrati)}
+            />
+
+            <StatCard
+              titolo="Stipendi pagati"
+              valore={formattaSoldi(totaleStipendiPagati)}
             />
 
             <StatCard
@@ -1083,981 +1155,3 @@ export default function AdminPage() {
               </div>
             </form>
           </div>
-
-
-          {/* GESTIONE STIPENDI */}
-
-          <div
-            className="card"
-            style={{
-              marginBottom: "35px",
-              border: "1px solid rgba(139,30,30,.45)",
-            }}
-          >
-            <div
-              style={{
-                color: "#c42a2a",
-                fontSize: "11px",
-                fontWeight: "900",
-                letterSpacing: "3px",
-                marginBottom: "8px",
-              }}
-            >
-              CONTABILITÀ PERSONALE
-            </div>
-
-            <h2>Gestione Stipendi</h2>
-
-            <p
-              style={{
-                color: "#999",
-                fontSize: "13px",
-                lineHeight: "1.7",
-                marginTop: "10px",
-                marginBottom: "22px",
-              }}
-            >
-              Gli stipendi vengono calcolati per settimane,
-              dalla domenica al sabato. Ogni domenica il
-              fatturato corrente riparte da zero.
-              Gli stipendi non pagati rimangono disponibili
-              come arretrati e possono essere saldati
-              successivamente.
-            </p>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: "15px",
-                marginBottom: "25px",
-              }}
-            >
-              <StatCard
-                titolo="Stipendi da pagare"
-                valore={formattaSoldi(totaleArretrati)}
-              />
-
-              <StatCard
-                titolo="Pagamenti in sospeso"
-                valore={cicliDaPagare.length}
-              />
-
-              <StatCard
-                titolo="Stipendi già pagati"
-                valore={cicliPagati.length}
-              />
-            </div>
-
-            <h3
-              style={{
-                marginBottom: "15px",
-                color: "#fff",
-              }}
-            >
-              Stipendi da pagare
-            </h3>
-
-            {cicliDaPagare.length === 0 ? (
-              <div
-                style={{
-                  padding: "20px",
-                  border: "1px solid rgba(139,30,30,.3)",
-                  borderRadius: "8px",
-                  color: "#999",
-                  marginBottom: "25px",
-                }}
-              >
-                Nessuno stipendio arretrato da pagare.
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(280px, 1fr))",
-                  gap: "15px",
-                  marginBottom: "30px",
-                }}
-              >
-                {cicliDaPagare.map((ciclo) => {
-                  const nome =
-                    `${ciclo.employee_nome || ""} ${
-                      ciclo.employee_cognome || ""
-                    }`.trim() ||
-                    ciclo.employee_username ||
-                    "Dipendente";
-
-                  return (
-                    <div
-                      key={ciclo.id}
-                      style={{
-                        background: "#111",
-                        border:
-                          "1px solid rgba(196,42,42,.5)",
-                        borderRadius: "10px",
-                        padding: "18px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                          gap: "10px",
-                          marginBottom: "12px",
-                        }}
-                      >
-                        <strong
-                          style={{
-                            color: "#fff",
-                            fontSize: "16px",
-                          }}
-                        >
-                          {nome}
-                        </strong>
-
-                        <span
-                          style={{
-                            color: "#ff7777",
-                            fontSize: "10px",
-                            fontWeight: "900",
-                            letterSpacing: "1px",
-                          }}
-                        >
-                          DA PAGARE
-                        </span>
-                      </div>
-
-                      <div
-                        style={{
-                          color: "#aaa",
-                          fontSize: "12px",
-                          lineHeight: "1.9",
-                        }}
-                      >
-                        <div>
-                          Settimana:{" "}
-                          {formattaSoloData(ciclo.periodo_da)}
-                          {" - "}
-                          {formattaSoloData(
-                            new Date(
-                              new Date(ciclo.periodo_a).getTime() -
-                                1000
-                            ).toISOString()
-                          )}
-                        </div>
-
-                        <div>
-                          Grado: {ciclo.employee_grado || "—"}
-                        </div>
-
-                        <div>
-                          Fatture: {ciclo.numero_fatture}
-                        </div>
-
-                        <div>
-                          Fatturato:{" "}
-                          {formattaSoldi(
-                            ciclo.fatturato_periodo
-                          )}
-                        </div>
-
-                        <div>
-                          Percentuale:{" "}
-                          {ciclo.percentuale_stipendio}%
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          color: "#fff",
-                          fontSize: "24px",
-                          fontWeight: "900",
-                          marginTop: "14px",
-                          marginBottom: "14px",
-                        }}
-                      >
-                        {formattaSoldi(
-                          ciclo.stipendio_maturato
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        style={{ width: "100%" }}
-                        disabled={
-                          pagamentoStipendio !== null ||
-                          Number(ciclo.stipendio_maturato) <= 0
-                        }
-                        onClick={() =>
-                          pagaCicloStipendio(ciclo)
-                        }
-                      >
-                        {pagamentoStipendio === ciclo.id
-                          ? "Pagamento in corso..."
-                          : "PAGA STIPENDIO"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <h3
-              style={{
-                color: "#fff",
-                marginBottom: "15px",
-              }}
-            >
-              Stipendi pagati
-            </h3>
-
-            {cicliPagati.length === 0 ? (
-              <p
-                style={{
-                  color: "#777",
-                  fontSize: "13px",
-                }}
-              >
-                Nessun pagamento ancora registrato.
-              </p>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
-                }}
-              >
-                {cicliPagati.map((ciclo) => (
-                  <div
-                    key={ciclo.id}
-                    style={{
-                      padding: "15px",
-                      background: "#111",
-                      border:
-                        "1px solid rgba(255,255,255,.08)",
-                      borderRadius: "8px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: "15px",
-                    }}
-                  >
-                    <div>
-                      <strong style={{ color: "#fff" }}>
-                        {ciclo.employee_nome}{" "}
-                        {ciclo.employee_cognome}
-                      </strong>
-
-                      <div
-                        style={{
-                          color: "#888",
-                          fontSize: "12px",
-                          marginTop: "5px",
-                        }}
-                      >
-                        Settimana del{" "}
-                        {formattaSoloData(ciclo.periodo_da)}
-                        {" • "}
-                        Pagato il{" "}
-                        {formattaData(ciclo.pagato_il)}
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: "right" }}>
-                      <strong
-                        style={{
-                          color: "#fff",
-                          fontSize: "18px",
-                        }}
-                      >
-                        {formattaSoldi(
-                          ciclo.stipendio_maturato
-                        )}
-                      </strong>
-
-                      <div
-                        style={{
-                          color: "#8ccf9b",
-                          fontSize: "11px",
-                          fontWeight: "900",
-                          marginTop: "4px",
-                        }}
-                      >
-                        PAGATO
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* GESTIONE IMPORT */}
-
-          <div
-            className="card"
-            style={{
-              marginBottom: "20px",
-              border: "1px solid rgba(139,30,30,.35)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "20px",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    color: "#c42a2a",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    letterSpacing: "3px",
-                    marginBottom: "7px",
-                  }}
-                >
-                  ORDINI MATERIALI
-                </div>
-
-                <h2>Gestione Import</h2>
-
-                <p
-                  style={{
-                    color: "#777",
-                    fontSize: "13px",
-                    marginTop: "7px",
-                  }}
-                >
-                  Visualizza, controlla e gestisci gli
-                  ordini dei materiali dell&apos;Armeria.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() =>
-                  router.push("/storico-import")
-                }
-              >
-                Storico Import
-              </button>
-            </div>
-          </div>
-
-          {/* CATALOGO */}
-
-          <div
-            className="card"
-            style={{
-              marginBottom: "35px",
-              border: "1px solid rgba(139,30,30,.35)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "20px",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    color: "#c42a2a",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    letterSpacing: "3px",
-                    marginBottom: "7px",
-                  }}
-                >
-                  CATALOGO ARMERIA
-                </div>
-
-                <h2>Gestione Prodotti</h2>
-
-                <p
-                  style={{
-                    color: "#777",
-                    fontSize: "13px",
-                    marginTop: "7px",
-                  }}
-                >
-                  Aggiungi prodotti, modifica prezzi
-                  e gestisci gli articoli disponibili.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() =>
-                  router.push("/admin/catalogo")
-                }
-              >
-                Gestisci Catalogo
-              </button>
-            </div>
-          </div>
-
-          {/* ASSUMI DIPENDENTE */}
-
-          <div
-            className="card"
-            style={{ marginBottom: "35px" }}
-          >
-            <div
-              style={{
-                color: "#c42a2a",
-                fontSize: "11px",
-                fontWeight: "bold",
-                letterSpacing: "3px",
-                marginBottom: "7px",
-              }}
-            >
-              PERSONALE
-            </div>
-
-            <h2 style={{ marginBottom: "22px" }}>
-              Assumi dipendente
-            </h2>
-
-            <form onSubmit={creaDipendente}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(180px, 1fr))",
-                  gap: "15px",
-                }}
-              >
-                <Campo
-                  label="Nome"
-                  value={nuovoDipendente.nome}
-                  onChange={(value) =>
-                    modificaNuovoDipendente("nome", value)
-                  }
-                />
-
-                <Campo
-                  label="Cognome"
-                  value={nuovoDipendente.cognome}
-                  onChange={(value) =>
-                    modificaNuovoDipendente("cognome", value)
-                  }
-                />
-
-                <Campo
-                  label="Username"
-                  value={nuovoDipendente.username}
-                  onChange={(value) =>
-                    modificaNuovoDipendente("username", value)
-                  }
-                />
-
-                <Campo
-                  label="Password"
-                  type="password"
-                  minLength={6}
-                  value={nuovoDipendente.password}
-                  onChange={(value) =>
-                    modificaNuovoDipendente("password", value)
-                  }
-                />
-
-                <div className="form-group">
-                  <label>Grado</label>
-
-                  <select
-                    value={nuovoDipendente.grado}
-                    onChange={(event) =>
-                      modificaNuovoDipendente(
-                        "grado",
-                        event.target.value
-                      )
-                    }
-                  >
-                    {Object.entries(GRADI).map(
-                      ([grado, percentuale]) => (
-                        <option
-                          key={grado}
-                          value={grado}
-                        >
-                          {grado} — {percentuale}%
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={creazione}
-              >
-                {creazione
-                  ? "Creazione..."
-                  : "Assumi Dipendente"}
-              </button>
-            </form>
-          </div>
-
-          {/* PERSONALE */}
-
-          <div style={{ marginBottom: "40px" }}>
-            <h2
-              style={{
-                marginBottom: "15px",
-                textTransform: "uppercase",
-                letterSpacing: "2px",
-              }}
-            >
-              Personale
-            </h2>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(300px, 1fr))",
-                gap: "15px",
-              }}
-            >
-              {dipendenti.map((dipendente) => (
-                <div
-                  className="card"
-                  key={dipendente.id}
-                  style={{
-                    opacity: dipendente.attivo ? 1 : 0.55,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent:
-                        "space-between",
-                      gap: "15px",
-                      marginBottom: "15px",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: "900",
-                        }}
-                      >
-                        {dipendente.nome}{" "}
-                        {dipendente.cognome}
-                      </div>
-
-                      <div
-                        style={{
-                          color: "#777",
-                          fontSize: "12px",
-                          marginTop: "4px",
-                        }}
-                      >
-                        @{dipendente.username || "—"}
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        color: dipendente.attivo
-                          ? "#c42a2a"
-                          : "#777",
-                        fontSize: "11px",
-                        fontWeight: "900",
-                      }}
-                    >
-                      {dipendente.attivo
-                        ? "ATTIVO"
-                        : "DISATTIVATO"}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#aaa",
-                      fontSize: "13px",
-                      lineHeight: "1.9",
-                      marginBottom: "15px",
-                    }}
-                  >
-                    <div>
-                      Grado:{" "}
-                      <strong style={{ color: "#fff" }}>
-                        {dipendente.grado}
-                      </strong>
-                    </div>
-
-                    <div>
-                      Percentuale:{" "}
-                      <strong style={{ color: "#fff" }}>
-                        {dipendente.percentuale_stipendio}%
-                      </strong>
-                    </div>
-
-                    <div>
-                      Fatture settimana corrente:{" "}
-                      <strong style={{ color: "#fff" }}>
-                        {dipendente.numero_fatture}
-                      </strong>
-                    </div>
-
-                    <div>
-                      Fatturato settimana corrente:{" "}
-                      <strong style={{ color: "#fff" }}>
-                        {formattaSoldi(dipendente.fatturato)}
-                      </strong>
-                    </div>
-
-                    <div>
-                      Stipendio in maturazione:{" "}
-                      <strong
-                        style={{
-                          color: "#fff",
-                          fontSize: "16px",
-                        }}
-                      >
-                        {formattaSoldi(dipendente.stipendio)}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {dipendente.ruolo !== "admin" ? (
-                    <>
-                      <div className="form-group">
-                        <label>Grado</label>
-
-                        <select
-                          value={dipendente.grado}
-                          disabled={
-                            salvataggio === dipendente.id ||
-                            eliminazione === dipendente.id
-                          }
-                          onChange={(event) =>
-                            cambiaGrado(
-                              dipendente,
-                              event.target.value
-                            )
-                          }
-                        >
-                          {Object.entries(GRADI).map(
-                            ([grado, percentuale]) => (
-                              <option
-                                key={grado}
-                                value={grado}
-                              >
-                                {grado} — {percentuale}%
-                              </option>
-                            )
-                          )}
-                        </select>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "10px",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          className="btn btn-dark"
-                          disabled={
-                            salvataggio === dipendente.id ||
-                            eliminazione === dipendente.id
-                          }
-                          onClick={() =>
-                            cambiaStatoDipendente(dipendente)
-                          }
-                        >
-                          {dipendente.attivo
-                            ? "Disattiva Dipendente"
-                            : "Riattiva Dipendente"}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          disabled={
-                            eliminazione === dipendente.id ||
-                            salvataggio === dipendente.id
-                          }
-                          onClick={() =>
-                            eliminaDipendente(dipendente)
-                          }
-                          style={{
-                            background: "#7a1010",
-                            borderColor: "#a51d1d",
-                          }}
-                        >
-                          {eliminazione === dipendente.id
-                            ? "Eliminazione..."
-                            : "Elimina definitivamente"}
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div
-                      style={{
-                        color: "#c42a2a",
-                        fontSize: "11px",
-                        fontWeight: "900",
-                        letterSpacing: "2px",
-                      }}
-                    >
-                      ACCOUNT AMMINISTRATORE
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ULTIME FATTURE */}
-
-          <div>
-            <h2
-              style={{
-                marginBottom: "15px",
-                textTransform: "uppercase",
-                letterSpacing: "2px",
-              }}
-            >
-              Ultime Fatture
-            </h2>
-
-            {fatture.length === 0 ? (
-              <div className="card">
-                <p style={{ color: "#777" }}>
-                  Nessuna fattura registrata.
-                </p>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                }}
-              >
-                {fatture.map((fattura) => {
-                  const dati = datiStoriciFattura(fattura);
-
-                  return (
-                    <div
-                      className="card"
-                      key={fattura.id}
-                      style={{
-                        opacity: fattura.annullata
-                          ? 0.55
-                          : 1,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent:
-                            "space-between",
-                          alignItems: "center",
-                          gap: "20px",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              fontWeight: "900",
-                              fontSize: "16px",
-                            }}
-                          >
-                            {dati.nome}
-                          </div>
-
-                          {dati.username && (
-                            <div
-                              style={{
-                                color: "#777",
-                                fontSize: "11px",
-                                marginTop: "3px",
-                              }}
-                            >
-                              @{dati.username}
-                            </div>
-                          )}
-
-                          <div
-                            style={{
-                              color: "#777",
-                              fontSize: "12px",
-                              marginTop: "4px",
-                            }}
-                          >
-                            {dati.grado}
-
-                            {dati.eliminato && (
-                              <span
-                                style={{
-                                  color: "#c42a2a",
-                                  fontWeight: "900",
-                                }}
-                              >
-                                {" • "}ACCOUNT ELIMINATO
-                              </span>
-                            )}
-
-                            {" • "}
-                            {formattaData(fattura.created_at)}
-                          </div>
-
-                          {fattura.annullata && (
-                            <div
-                              style={{
-                                color: "#c42a2a",
-                                fontWeight: "900",
-                                fontSize: "11px",
-                                marginTop: "7px",
-                              }}
-                            >
-                              FATTURA ANNULLATA
-                            </div>
-                          )}
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "15px",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: "20px",
-                              fontWeight: "900",
-                            }}
-                          >
-                            {formattaSoldi(fattura.totale)}
-                          </div>
-
-                          {fattura.annullata ? (
-                            <button
-                              type="button"
-                              className="btn btn-dark"
-                              disabled={
-                                azioneFattura === fattura.id
-                              }
-                              onClick={() =>
-                                ripristinaFattura(fattura)
-                              }
-                            >
-                              {azioneFattura === fattura.id
-                                ? "Attendi..."
-                                : "Ripristina"}
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn btn-dark"
-                              disabled={
-                                azioneFattura === fattura.id
-                              }
-                              onClick={() =>
-                                annullaFattura(fattura)
-                              }
-                            >
-                              {azioneFattura === fattura.id
-                                ? "Attendi..."
-                                : "Annulla"}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-    </>
-  );
-}
-
-// =========================================================
-// CAMPO FORM
-// =========================================================
-
-function Campo({
-  label,
-  value,
-  onChange,
-  type = "text",
-  minLength,
-}) {
-  return (
-    <div className="form-group">
-      <label>{label}</label>
-
-      <input
-        type={type}
-        value={value}
-        minLength={minLength}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
-        required
-      />
-    </div>
-  );
-}
-
-// =========================================================
-// CARD STATISTICA
-// =========================================================
-
-function StatCard({ titolo, valore }) {
-  return (
-    <div className="card">
-      <div
-        style={{
-          color: "#777",
-          fontSize: "11px",
-          textTransform: "uppercase",
-          letterSpacing: "1.5px",
-          marginBottom: "10px",
-        }}
-      >
-        {titolo}
-      </div>
-
-      <div
-        style={{
-          fontSize: "28px",
-          fontWeight: "900",
-        }}
-      >
-        {valore}
-      </div>
-    </div>
-  );
-}
